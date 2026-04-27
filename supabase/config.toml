@@ -228,19 +228,19 @@ otp_expiry = 3600
 
 [auth.email.template.confirmation]
 subject = "メールアドレスの確認 - E-Learning"
-content_path = "./templates/confirm.html"
+content_path = "./supabase/templates/confirm.html"
 
 [auth.email.template.invite]
 subject = "E-Learningへの招待"
-content_path = "./templates/invite.html"
+content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.recovery]
 subject = "パスワードリセット - E-Learning"
-content_path = "./templates/recovery.html"
+content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.magic_link]
 subject = "ログインリンク - E-Learning"
-content_path = "./templates/magic_link.html"
+content_path = "./supabase/templates/magic_link.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

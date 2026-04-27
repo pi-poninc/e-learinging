@@ -7,11 +7,14 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
+  // console.log('[dashboard] start rendering')
   const profile = await requireAuth()
+  // console.log('[dashboard] auth done, profile:', profile)
   const supabase = await createClient()
 
   // Get enrolled courses with progress
-  const { data: enrollments } = await supabase
+  // console.log('[dashboard] querying enrollments...')
+  const { data: enrollments, error: enrollError } = await supabase
     .from('enrollments')
     .select(`
       id,
@@ -26,6 +29,8 @@ export default async function DashboardPage() {
     `)
     .eq('user_id', profile.id)
     .eq('status', 'active')
+
+  // console.log('[dashboard] enrollments:', enrollments?.length, 'error:', enrollError?.message)
 
   // Get lesson progress for each enrolled course
   const coursesWithProgress = await Promise.all(
