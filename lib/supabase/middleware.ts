@@ -25,8 +25,10 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // getUser() がcookieを更新するので必ず呼ぶ
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
@@ -35,15 +37,23 @@ export async function updateSession(request: NextRequest) {
   const publicRoutes = ['/', '/login', '/signup']
   const isPublicRoute = publicRoutes.includes(pathname)
 
-  // Redirect unauthenticated users to login
-  if (!user && !isPublicRoute) {
+  // Auth error or no user → treat as unauthenticated
+  const isAuthenticated = !error && !!user
+
+  // Redirect unauthenticated users to login (non-public routes only)
+  if (!isAuthenticated && !isPublicRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    // Cookie changes from getUser() must be copied to the redirect response
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
   // If authenticated, check role for admin routes
-  if (user && pathname.startsWith('/admin')) {
+  if (isAuthenticated && pathname.startsWith('/admin')) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
@@ -53,15 +63,23 @@ export async function updateSession(request: NextRequest) {
     if (profile && !['admin', 'instructor'].includes(profile.role)) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      const redirectResponse = NextResponse.redirect(url)
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value)
+      })
+      return redirectResponse
     }
   }
 
   // Redirect logged-in users away from login/signup
-  if (user && (pathname === '/login' || pathname === '/signup')) {
+  if (isAuthenticated && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value)
+    })
+    return redirectResponse
   }
 
   return supabaseResponse
