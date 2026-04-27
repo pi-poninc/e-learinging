@@ -11,6 +11,7 @@ const navItems = [
   { href: '/admin/enrollments', label: '受講者管理' },
   { href: '/admin/progress', label: '進捗確認' },
   { href: '/admin/certificates', label: '修了証管理' },
+  { href: '/admin/help', label: '使い方ガイド' },
 ]
 
 export function AdminLayout({ children }: { children: ReactNode }) {
