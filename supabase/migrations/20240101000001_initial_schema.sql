@@ -2,17 +2,6 @@
 -- E-Learning MVP: Initial Schema
 -- ============================================
 
--- Helper function to get current user's role
-create or replace function public.get_user_role()
-returns text
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select role from public.profiles where id = auth.uid();
-$$;
-
 -- ============================================
 -- profiles
 -- ============================================
@@ -23,6 +12,17 @@ create table public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Helper function to get current user's role
+create or replace function public.get_user_role()
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
 
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
