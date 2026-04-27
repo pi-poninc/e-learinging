@@ -4,6 +4,7 @@
 
 - **Project URL**: https://hxbiesgnijkmsbjxyzby.supabase.co
 - **Publishable Key**: sb_publishable_WkTiOffAezO3X9kotzrGjQ_Gq1TBARy
+- **Service Role Key**: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4Ymllc2duaWprbXNianh5emJ5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzI1OTA4OSwiZXhwIjoyMDkyODM1MDg5fQ.W2Iy0KyRDPbJX-05VBxx-yjWrptu7SKwqn513Akept4
 - **PostgreSQL接続文字列**: postgresql://postgres:[YOUR-PASSWORD]@db.hxbiesgnijkmsbjxyzby.supabase.co:5432/postgres
 - **Project Ref**: hxbiesgnijkmsbjxyzby
 - **GitHub**: git@github.com:pi-poninc/e-learinging.git

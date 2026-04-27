@@ -130,3 +130,33 @@ if (!profile) {
 - スコープ: `public` と `private` が必要（自分の動画を取得するため）
 - `VIMEO_ACCESS_TOKEN` をサーバーサイドのみで使用（クライアントに漏洩させない）
 - APIレート制限: 1分あたり100リクエスト
+
+## 8. Render CLI で環境変数を設定する方法
+
+### 問題
+`render` CLIには環境変数を直接設定するサブコマンドがない。
+
+### 解決方法
+Render API を curl で直接叩く：
+```bash
+RENDER_API_KEY="$(cat ~/.config/render/cli.yaml | grep 'key:' | head -1 | awk '{print $2}')"
+SERVICE_ID="srv-xxxxx"
+
+curl -X PUT "https://api.render.com/v1/services/${SERVICE_ID}/env-vars" \
+  -H "Authorization: Bearer ${RENDER_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '[{"key": "KEY_NAME", "value": "value"}]'
+```
+
+### 教訓
+- Render CLI のAPIキーは `~/.config/render/cli.yaml` に保存されている
+- 環境変数設定は `PUT /v1/services/{id}/env-vars` で一括設定（上書き）
+- デプロイトリガーは `render deploys create {service-id} --confirm`
+- Render にデプロイする前に**必ず環境変数を先に設定する**（ビルド時に必要な `NEXT_PUBLIC_*` が無いと失敗する）
+
+## 9. Render サービスの管理情報
+
+- **Service ID**: srv-d7nes9ipmmbs73cfem2g
+- **Dashboard**: https://dashboard.render.com/web/srv-d7nes9ipmmbs73cfem2g
+- **URL**: https://e-learinging.onrender.com
+- デプロイは GitHub push 時に自動（auto-deploy: yes）
