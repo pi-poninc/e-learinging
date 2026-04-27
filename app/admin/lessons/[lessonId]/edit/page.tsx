@@ -22,6 +22,7 @@ export default function EditLessonPage() {
   const [lesson, setLesson] = useState<(Lesson & { section: { course_id: string } }) | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [fetchingMeta, setFetchingMeta] = useState(false)
   const [error, setError] = useState('')
 
   const loadLesson = useCallback(async () => {
@@ -138,12 +139,40 @@ export default function EditLessonPage() {
               rows={6}
               placeholder="レッスンの説明文やメモ"
             />
-            <Input
-              label="Vimeo URL"
-              name="vimeo_url"
-              defaultValue={lesson.vimeo_url || ''}
-              placeholder="https://vimeo.com/123456789"
-            />
+            <div>
+              <Input
+                label="Vimeo URL"
+                name="vimeo_url"
+                defaultValue={lesson.vimeo_url || ''}
+                placeholder="https://vimeo.com/123456789"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                loading={fetchingMeta}
+                className="mt-1"
+                onClick={async () => {
+                  const form = document.querySelector('form') as HTMLFormElement
+                  const url = new FormData(form).get('vimeo_url') as string
+                  if (!url) { setError('Vimeo URLを入力してください'); return }
+                  setFetchingMeta(true)
+                  setError('')
+                  try {
+                    const res = await fetch(`/api/vimeo/meta?url=${encodeURIComponent(url)}`)
+                    if (!res.ok) { const d = await res.json(); setError(d.error || 'メタデータ取得失敗'); setFetchingMeta(false); return }
+                    const meta = await res.json()
+                    const titleInput = form.querySelector('[name="title"]') as HTMLInputElement
+                    const durationInput = form.querySelector('[name="duration_seconds"]') as HTMLInputElement
+                    if (meta.name && titleInput) titleInput.value = meta.name
+                    if (meta.duration && durationInput) durationInput.value = String(meta.duration)
+                  } catch { setError('Vimeo APIエラー') }
+                  setFetchingMeta(false)
+                }}
+              >
+                Vimeoから情報を取得
+              </Button>
+            </div>
             <Input
               label="動画の長さ（秒）"
               name="duration_seconds"

@@ -75,3 +75,58 @@ const { count } = await supabase.from('lesson_progress').select('id', { count: '
 
 ### 教訓
 SQL migration では、参照先のテーブルを先に作成してから関数を定義すること。
+
+## 5. Render デプロイ時の Node.js バージョン
+
+### 問題
+Render がデフォルトで Node.js 24.x を使用し、ビルドが失敗した。
+
+### 原因
+- `package.json` に `engines` フィールドがなかった
+- `.node-version` ファイルがなかった
+- Node 24 は Next.js 16 との互換性が不安定
+
+### 修正
+```json
+// package.json
+"engines": { "node": "20.x" }
+```
+```
+// .node-version
+20.11.1
+```
+
+### 教訓
+- Render にデプロイする場合は必ず Node.js バージョンを明示的に指定する
+- `@types/node` のバージョンと合わせる（`^20` なら Node 20.x）
+- Render の環境変数に `NEXT_PUBLIC_SUPABASE_URL` 等を事前に設定しておくこと
+
+## 6. Supabase Auth の profiles 自動作成トリガーが動かない場合
+
+### 問題
+signup 後に `profiles` テーブルにレコードが作成されず、ダッシュボードが表示されなかった。
+
+### 原因
+マイグレーション適用前にユーザーを作成した場合、`handle_new_user` トリガーが存在しないためプロフィールが作成されない。
+
+### 修正
+`lib/auth.ts` の `getUserProfile()` にフォールバックを追加：
+```typescript
+if (!profile) {
+  // Trigger didn't fire — return fallback
+  return { id: user.id, name: user.email || null, role: 'student' }
+}
+```
+
+### 教訓
+- DBトリガーに依存する場合、トリガーが動かないケースも想定してアプリ側にフォールバックを入れる
+- `single()` ではなく `maybeSingle()` を使い、0件の場合もエラーにしない
+
+## 7. Vimeo API 連携
+
+### ポイント
+- Vimeo API Access Token は https://developer.vimeo.com/apps で取得
+- Personal Access Token で十分（OAuth不要）
+- スコープ: `public` と `private` が必要（自分の動画を取得するため）
+- `VIMEO_ACCESS_TOKEN` をサーバーサイドのみで使用（クライアントに漏洩させない）
+- APIレート制限: 1分あたり100リクエスト
