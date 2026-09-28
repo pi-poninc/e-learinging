@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# e-learning video content: keep sources (memo/script/gen_slides/slides), ignore heavy generated artifacts
+content/**/work/
+content/**/output.mp4
+content/**/narration*.mp3
+content/**/narration.txt
+content/**/*.pdf
+# extracted skill copy (original zip is kept as reference)
+materials/video-elearning-skill/
