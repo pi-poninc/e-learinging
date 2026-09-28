@@ -15,7 +15,7 @@
 
 必要な環境変数は .env.local から自動で読む（VIMEO_ACCESS_TOKEN は upload 権限必須）。
 """
-import argparse, json, os, subprocess, sys, urllib.request
+import argparse, json, os, subprocess, sys, urllib.request, urllib.error
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent          # プロジェクトルート
@@ -38,6 +38,32 @@ def run(cmd):
     r = subprocess.run(cmd)
     if r.returncode != 0:
         sys.exit(f"失敗: {cmd[0]}")
+
+
+def script_narration_text(script_path):
+    """台本Markdownのナレーション列だけを行ごとに取り出す。"""
+    import re
+    lines = []
+    for ln in Path(script_path).read_text(encoding="utf-8").splitlines():
+        m = re.match(r"\|\s*\d+\s*\|.*\|(.*)\|\s*$", ln.strip())
+        if m:
+            lines.append(m.group(1).strip())
+    return lines
+
+
+def fish_tts(key, text, voice_id, out_path, model="s1"):
+    """Fish Audio でテキストを音声化して out_path(mp3) に保存。voice_id=自分のクローン声のmodel id。"""
+    body = json.dumps({"text": text, "reference_id": voice_id, "format": "mp3"}).encode()
+    req = urllib.request.Request("https://api.fish.audio/v1/tts", data=body, method="POST",
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json", "model": model})
+    try:
+        with urllib.request.urlopen(req) as r:
+            Path(out_path).write_bytes(r.read())
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")[:300]
+        if e.code == 402:
+            sys.exit("Fish Audio: APIクレジット不足です。https://fish.audio/app/developers でチャージしてください。")
+        sys.exit(f"Fish Audio TTS 失敗 ({e.code}): {detail}")
 
 
 def vimeo_upload(token, path, name, desc):
@@ -84,6 +110,8 @@ def main():
     ap.add_argument("--desc", default="")
     ap.add_argument("--course", help="この名前で講座+セクション+レッスンを新規作成して登録")
     ap.add_argument("--lesson", help="既存レッスンID に動画URLを登録")
+    ap.add_argument("--voice", help="Fish Audioの声モデルID（自分のクローン声）。指定すると台本からnarration.mp3を自動生成")
+    ap.add_argument("--regen-voice", action="store_true", help="narration.mp3が既にあっても作り直す")
     ap.add_argument("--skip-prepare", action="store_true")
     ap.add_argument("--skip-compose", action="store_true")
     a = ap.parse_args()
@@ -96,11 +124,24 @@ def main():
     out = folder / "output.mp4"
     title = a.title or folder.name
 
-    for f in (pptx, script, narration):
+    for f in (pptx, script):
         if not f.exists():
             sys.exit(f"必須ファイルがありません: {f}")
 
     env = load_env()
+
+    # 0) ナレーション音声（Fish Audio。--voice で自分のクローン声から自動生成）
+    if a.voice and (a.regen_voice or not narration.exists()):
+        fk = env.get("FISH_AUDIO_API_KEY")
+        if not fk:
+            sys.exit(".env.local に FISH_AUDIO_API_KEY がありません")
+        text = "\n".join(script_narration_text(script))
+        print("=== Fish Audioでナレーション生成中 ===")
+        fish_tts(fk, text, a.voice, str(narration))
+        print("  →", narration)
+    if not narration.exists():
+        sys.exit(f"narration.mp3 がありません（--voice でFish生成するか手動で配置）: {narration}")
+
     token = env.get("VIMEO_ACCESS_TOKEN")
     if not token:
         sys.exit(".env.local に VIMEO_ACCESS_TOKEN がありません")

@@ -32,7 +32,12 @@ content/<番号>-<スラッグ>/
 スライド・台本・ナレーション音声が揃ったら、合成→Vimeoアップ→e-learning登録まで一発：
 
 ```bash
-# 新しい講座を作って登録
+# 台本から自分の声(Fish Audio)でナレーション生成→合成→アップ→登録まで全自動
+python3 content/build.py content/02-xxx \
+  --voice <Fish声モデルID> \
+  --course "社内ナレッジ / FDE編" --title "レッスン名" --desc "説明"
+
+# 音声を手動で用意済み（narration.mp3を置いた）場合は --voice なしでOK
 python3 content/build.py content/02-xxx \
   --course "社内ナレッジ / FDE編" --title "レッスン名" --desc "説明"
 
@@ -43,8 +48,13 @@ python3 content/build.py content/02-xxx --lesson <lesson_id>
 python3 content/build.py content/02-xxx --lesson <lesson_id> --skip-prepare --skip-compose  # アップだけ
 ```
 
-`.env.local` の `VIMEO_ACCESS_TOKEN`（upload権限）と `SUPABASE_SERVICE_ROLE_KEY` を自動で使う。
+`.env.local` の `VIMEO_ACCESS_TOKEN`（upload権限）・`SUPABASE_SERVICE_ROLE_KEY`・`FISH_AUDIO_API_KEY` を自動で使う。
 Vimeoは限定公開(unlisted)でアップされ、`lessons.vimeo_url` にはハッシュ付きURLが保存される。
+
+### Fish Audio（自分の声）を使うための前提
+- **声モデルの作成**: https://fish.audio/app/ で Premium Voice Clone を作り、そのモデルIDを `--voice` に渡す
+- **APIクレジット**: TTS APIはプラットフォームとは別の「APIクレジット」を消費する。
+  https://fish.audio/app/developers でチャージが必要（残高0だと 402 エラー）
 
 ## 必要ツール（初回のみ）
 
