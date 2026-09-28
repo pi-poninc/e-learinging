@@ -77,11 +77,10 @@ export function VimeoPlayerWrapper({
 
     // 限定公開(unlisted)動画は URL のハッシュ(?h=...)が必要なので、vimeoUrl があれば
     // フルURLで初期化する（id だけだと privacy エラーで再生できない）。公開動画でもURL初期化で問題ない。
-    const player = new Player(containerRef.current, {
-      ...(vimeoUrl ? { url: vimeoUrl } : { id: parseInt(videoId, 10) }),
-      width: 960,
-      responsive: true,
-    })
+    type PlayerOptions = ConstructorParameters<typeof Player>[1]
+    const player = vimeoUrl
+      ? new Player(containerRef.current, { url: vimeoUrl, width: 960, responsive: true } as PlayerOptions)
+      : new Player(containerRef.current, { id: parseInt(videoId, 10), width: 960, responsive: true })
 
     playerRef.current = player
 

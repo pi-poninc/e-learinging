@@ -9,6 +9,7 @@ const navItems = [
   { href: '/admin', label: 'ダッシュボード' },
   { href: '/admin/courses', label: '講座管理' },
   { href: '/admin/users', label: 'ユーザー管理' },
+  { href: '/admin/groups', label: 'グループ管理' },
   { href: '/admin/enrollments', label: '受講登録' },
   { href: '/admin/progress', label: '進捗確認' },
   { href: '/admin/certificates', label: '修了証管理' },
