@@ -27,6 +27,25 @@ content/<番号>-<スラッグ>/
 7. **e-learning 管理画面**（`/admin/lessons`）でレッスンにVimeo URLを登録
 8. 新入社員が受講 → 進捗が自動記録
 
+## ワンコマンド量産（build.py）
+
+スライド・台本・ナレーション音声が揃ったら、合成→Vimeoアップ→e-learning登録まで一発：
+
+```bash
+# 新しい講座を作って登録
+python3 content/build.py content/02-xxx \
+  --course "社内ナレッジ / FDE編" --title "レッスン名" --desc "説明"
+
+# 既存レッスンに動画を登録／差し替え
+python3 content/build.py content/02-xxx --lesson <lesson_id>
+
+# 音声だけ差し替えて作り直す等（合成済みwork/を再利用しないで作り直す場合は素の実行）
+python3 content/build.py content/02-xxx --lesson <lesson_id> --skip-prepare --skip-compose  # アップだけ
+```
+
+`.env.local` の `VIMEO_ACCESS_TOKEN`（upload権限）と `SUPABASE_SERVICE_ROLE_KEY` を自動で使う。
+Vimeoは限定公開(unlisted)でアップされ、`lessons.vimeo_url` にはハッシュ付きURLが保存される。
+
 ## 必要ツール（初回のみ）
 
 - ffmpeg, poppler(pdftoppm), LibreOffice(soffice), whisper.cpp(whisper-cli), Python3+Pillow+python-pptx
