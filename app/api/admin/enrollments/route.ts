@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { userId, courseId } = body
+  const { userId, courseId, dueDate } = body
 
   if (!userId || !courseId) {
     return NextResponse.json({ error: 'Missing userId or courseId' }, { status: 400 })
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         course_id: courseId,
         status: 'active',
+        due_date: dueDate || null,
       },
       { onConflict: 'user_id,course_id' }
     )

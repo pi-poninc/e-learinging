@@ -23,6 +23,7 @@ interface EnrollmentRow {
   id: string
   status: string
   enrolled_at: string
+  due_date: string | null
   user: { id: string; name: string | null } | null
   course: { id: string; title: string } | null
 }
@@ -34,6 +35,7 @@ export default function AdminEnrollmentsPage() {
   const [courses, setCourses] = useState<CourseOption[]>([])
   const [selectedUser, setSelectedUser] = useState('')
   const [selectedCourse, setSelectedCourse] = useState('')
+  const [dueDate, setDueDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,7 +43,7 @@ export default function AdminEnrollmentsPage() {
     const [enrollRes, usersRes, coursesRes] = await Promise.all([
       supabase
         .from('enrollments')
-        .select('id, status, enrolled_at, user:profiles(id, name), course:courses(id, title)')
+        .select('id, status, enrolled_at, due_date, user:profiles(id, name), course:courses(id, title)')
         .order('enrolled_at', { ascending: false }),
       supabase.from('profiles').select('id, name, role').eq('role', 'student'),
       supabase.from('courses').select('id, title').order('title'),
@@ -64,7 +66,7 @@ export default function AdminEnrollmentsPage() {
     const res = await fetch('/api/admin/enrollments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: selectedUser, courseId: selectedCourse }),
+      body: JSON.stringify({ userId: selectedUser, courseId: selectedCourse, dueDate: dueDate || null }),
     })
 
     if (!res.ok) {
@@ -73,6 +75,7 @@ export default function AdminEnrollmentsPage() {
     } else {
       setSelectedUser('')
       setSelectedCourse('')
+      setDueDate('')
       loadData()
     }
     setLoading(false)
@@ -124,6 +127,15 @@ export default function AdminEnrollmentsPage() {
                 ))}
               </select>
             </div>
+            <div className="w-full sm:w-auto">
+              <label className="block text-sm font-medium text-gray-700 mb-1">受講期限（任意）</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
             <Button onClick={handleCreate} loading={loading}>
               登録
             </Button>
@@ -137,25 +149,36 @@ export default function AdminEnrollmentsPage() {
           <h2 className="text-lg font-semibold">受講登録一覧</h2>
         </CardHeader>
         <CardBody className="p-0">
-          <Table headers={['ユーザー', '講座', 'ステータス', '登録日']}>
-            {enrollments.map((enrollment) => (
-              <tr key={enrollment.id}>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {enrollment.user?.name || enrollment.user?.id || '-'}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {enrollment.course?.title || '-'}
-                </td>
-                <td className="px-6 py-4">
-                  <Badge variant={statusBadgeVariant(enrollment.status)}>
-                    {enrollment.status}
-                  </Badge>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {new Date(enrollment.enrolled_at).toLocaleDateString('ja-JP')}
-                </td>
-              </tr>
-            ))}
+          <Table headers={['ユーザー', '講座', 'ステータス', '受講期限', '登録日']}>
+            {enrollments.map((enrollment) => {
+              const overdue =
+                enrollment.due_date &&
+                enrollment.status !== 'completed' &&
+                new Date(enrollment.due_date) < new Date(new Date().toDateString())
+              return (
+                <tr key={enrollment.id}>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {enrollment.user?.name || enrollment.user?.id || '-'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {enrollment.course?.title || '-'}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge variant={statusBadgeVariant(enrollment.status)}>
+                      {enrollment.status}
+                    </Badge>
+                  </td>
+                  <td className={`px-6 py-4 text-sm ${overdue ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                    {enrollment.due_date
+                      ? `${new Date(enrollment.due_date).toLocaleDateString('ja-JP')}${overdue ? '（期限切れ）' : ''}`
+                      : '—'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {new Date(enrollment.enrolled_at).toLocaleDateString('ja-JP')}
+                  </td>
+                </tr>
+              )
+            })}
           </Table>
         </CardBody>
       </Card>
