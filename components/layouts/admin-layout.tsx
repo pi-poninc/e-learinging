@@ -35,7 +35,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="px-6 py-4 border-b border-gray-200">
           <Link href="/admin" className="text-xl font-bold text-blue-600">
-            E-Learning Admin
+            pipon learning 管理
           </Link>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">

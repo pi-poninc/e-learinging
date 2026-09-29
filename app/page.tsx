@@ -6,7 +6,7 @@ export default function Home() {
       {/* Header */}
       <header className="border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-          <h1 className="text-xl font-bold text-blue-600">E-Learning</h1>
+          <h1 className="text-xl font-bold text-blue-600">pipon learning</h1>
           <div className="flex gap-4">
             <Link
               href="/login"

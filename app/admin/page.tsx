@@ -45,22 +45,43 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="px-6 py-8">
-          {/* ロゴ + キャッチ */}
+          {/* ロゴ + キャッチ（pipon ブランド：青ヘキサゴン＋ネットワーク＋オレンジのアクセント） */}
           <div className="flex flex-col items-center">
-            <svg width="96" height="96" viewBox="0 0 64 64" aria-hidden className="text-gray-900">
+            <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden>
+              <defs>
+                <linearGradient id="piponHex" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#5cb1e2" />
+                  <stop offset="100%" stopColor="#17579a" />
+                </linearGradient>
+              </defs>
+              {/* ヘキサゴン */}
               <path
-                d="M32 6 L58 26 L52 26 L52 30 L12 30 L12 26 L6 26 Z"
-                fill="currentColor"
+                d="M50 8 L86 29 L86 71 L50 92 L14 71 L14 29 Z"
+                fill="none" stroke="url(#piponHex)" strokeWidth="7" strokeLinejoin="round"
               />
-              <path
-                d="M16 32 L24 32 L24 46 a8 8 0 0 0 16 0 L40 32 L48 32 L48 46 a16 16 0 0 1 -32 0 Z"
-                fill="currentColor"
-              />
+              {/* ネットワーク */}
+              <g stroke="#2f86c5" strokeWidth="2.4" strokeLinecap="round">
+                <line x1="50" y1="52" x2="37" y2="39" />
+                <line x1="50" y1="52" x2="64" y2="42" />
+                <line x1="50" y1="52" x2="50" y2="75" />
+              </g>
+              <g fill="#2f86c5">
+                <rect x="33" y="35" width="8" height="8" rx="1.5" />
+                <rect x="60" y="38" width="8" height="8" rx="1.5" />
+                <rect x="45" y="47" width="10" height="10" rx="2" />
+                <circle cx="50" cy="77" r="4" />
+              </g>
+              {/* オレンジのアクセント */}
+              <g fill="#f0a11f">
+                <circle cx="41" cy="52" r="3.2" />
+                <circle cx="61" cy="56" r="3.2" />
+              </g>
             </svg>
-            <div className="mt-2 text-4xl font-extrabold tracking-wide" style={{ color: '#f0821e' }}>
-              ULearning
+            <div className="mt-3 text-4xl font-extrabold tracking-tight">
+              <span style={{ color: '#2b2b2b' }}>pipon</span>{' '}
+              <span style={{ color: '#1c6fb0' }}>learning</span>
             </div>
-            <p className="mt-1 text-sm text-gray-500">-誰でも気軽にeラーニング導入-</p>
+            <p className="mt-1 text-sm text-gray-500">- 株式会社pipon 社内教育プラットフォーム -</p>
           </div>
 
           {/* 4つのstatタイル */}

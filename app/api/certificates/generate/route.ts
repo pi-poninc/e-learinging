@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
   doc.text(`Date: ${dateStr}`, 148.5, 155, { align: 'center' })
   doc.text(`Certificate No: ${cert.certificate_number}`, 148.5, 165, { align: 'center' })
 
-  // E-Learning footer
+  // pipon learning footer
   doc.setFontSize(12)
   doc.setTextColor(37, 99, 235)
-  doc.text('E-Learning', 148.5, 185, { align: 'center' })
+  doc.text('pipon learning', 148.5, 185, { align: 'center' })
 
   // Convert to buffer and upload
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'))

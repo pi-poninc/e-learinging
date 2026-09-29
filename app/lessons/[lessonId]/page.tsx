@@ -5,6 +5,7 @@ import { StudentLayout } from '@/components/layouts/student-layout'
 import { Card, CardBody } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { VimeoPlayerWrapper } from '@/components/vimeo-player'
+import { LessonNotes } from '@/components/lesson-notes'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
@@ -134,6 +135,9 @@ export default async function LessonPage({ params }: Props) {
             </CardBody>
           </Card>
         )}
+
+        {/* 学びメモ */}
+        <LessonNotes lessonId={lesson.id} />
 
         {/* Navigation */}
         <div className="flex justify-between items-center">
