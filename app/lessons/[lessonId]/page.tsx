@@ -86,6 +86,16 @@ export default async function LessonPage({ params }: Props) {
     }
   }
 
+  // 配布ファイル
+  const { data: attachments } = await supabase
+    .from('lesson_attachments')
+    .select('id, file_name, file_url, size_bytes')
+    .eq('lesson_id', lesson.id)
+    .order('created_at')
+
+  const fmtSize = (b: number) =>
+    b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)}MB` : b >= 1024 ? `${Math.round(b / 1024)}KB` : `${b}B`
+
   return (
     <StudentLayout isAdmin={admin}>
       <div className="mb-4">
@@ -132,6 +142,32 @@ export default async function LessonPage({ params }: Props) {
               <div className="prose max-w-none">
                 <div dangerouslySetInnerHTML={{ __html: lesson.body.replace(/\n/g, '<br>') }} />
               </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* 配布ファイル */}
+        {attachments && attachments.length > 0 && (
+          <Card className="mb-6">
+            <CardBody>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">配布ファイル（ダウンロード）</h2>
+              <ul className="space-y-2">
+                {attachments.map((a) => (
+                  <li key={a.id}>
+                    <a
+                      href={a.file_url}
+                      download
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-blue-600 hover:underline break-all"
+                    >
+                      <span aria-hidden>⬇︎</span>
+                      {a.file_name}
+                      <span className="text-xs text-gray-400">{fmtSize(a.size_bytes)}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </CardBody>
           </Card>
         )}

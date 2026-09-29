@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { AdminLayout } from '@/components/layouts/admin-layout'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
+import { LessonAttachmentsAdmin } from '@/components/admin/lesson-attachments-admin'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
@@ -210,6 +211,8 @@ export default function EditLessonPage() {
           </form>
         </CardBody>
       </Card>
+
+      <LessonAttachmentsAdmin lessonId={lessonId} />
     </AdminLayout>
   )
 }
