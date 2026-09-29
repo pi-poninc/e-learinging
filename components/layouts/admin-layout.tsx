@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin/reports', label: '進捗・成績レポート' },
   { href: '/admin/announcements', label: 'お知らせ配信' },
   { href: '/admin/reminders', label: '受講リマインド' },
+  { href: '/admin/submissions', label: 'ネタ投稿管理' },
   { href: '/admin/certificates', label: '修了証管理' },
   { href: '/admin/help', label: '使い方ガイド' },
 ]

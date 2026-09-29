@@ -52,6 +52,12 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
               >
                 マイコース
               </Link>
+              <Link
+                href="/submit"
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                ネタ投稿
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-sm text-red-600 hover:text-red-700"
