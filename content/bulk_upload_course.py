@@ -67,13 +67,18 @@ def vimeo_upload(token, path, name, desc=""):
                                  headers={**hdr, "Content-Type": "application/json"})
     d = json.load(urllib.request.urlopen(req))
     vid, link = d["uri"].split("/")[-1], d["upload"]["upload_link"]
-    # tus PATCH（大きめファイルも一括送信。必要なら分割送信に変更可）
+    # tus PATCH をチャンク分割で送る（大容量ファイルでも安定・メモリも節約）
+    CHUNK = 64 * 1024 * 1024
+    offset = 0
     with open(path, "rb") as f:
-        data = f.read()
-    patch = urllib.request.Request(link, data=data, method="PATCH", headers={
-        "Tus-Resumable": "1.0.0", "Upload-Offset": "0",
-        "Content-Type": "application/offset+octet-stream"})
-    urllib.request.urlopen(patch)
+        while offset < size:
+            f.seek(offset)
+            chunk = f.read(CHUNK)
+            preq = urllib.request.Request(link, data=chunk, method="PATCH", headers={
+                "Tus-Resumable": "1.0.0", "Upload-Offset": str(offset),
+                "Content-Type": "application/offset+octet-stream"})
+            with urllib.request.urlopen(preq) as pr:
+                offset = int(pr.headers.get("Upload-Offset", offset + len(chunk)))
     req = urllib.request.Request(f"{api}/videos/{vid}?fields=link", headers=hdr)
     link = json.load(urllib.request.urlopen(req)).get("link") or f"https://vimeo.com/{vid}"
     return vid, link
