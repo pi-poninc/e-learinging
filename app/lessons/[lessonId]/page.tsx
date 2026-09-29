@@ -89,7 +89,7 @@ export default async function LessonPage({ params }: Props) {
   // 配布ファイル
   const { data: attachments } = await supabase
     .from('lesson_attachments')
-    .select('id, file_name, file_url, size_bytes')
+    .select('id, file_name, file_url, size_bytes, preview_text, zip_entries')
     .eq('lesson_id', lesson.id)
     .order('created_at')
 
@@ -146,27 +146,53 @@ export default async function LessonPage({ params }: Props) {
           </Card>
         )}
 
-        {/* 配布ファイル */}
+        {/* 配布ファイル（ダウンロード＋中身プレビュー） */}
         {attachments && attachments.length > 0 && (
           <Card className="mb-6">
             <CardBody>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">配布ファイル（ダウンロード）</h2>
-              <ul className="space-y-2">
-                {attachments.map((a) => (
-                  <li key={a.id}>
-                    <a
-                      href={a.file_url}
-                      download
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 text-blue-600 hover:underline break-all"
-                    >
-                      <span aria-hidden>⬇︎</span>
-                      {a.file_name}
-                      <span className="text-xs text-gray-400">{fmtSize(a.size_bytes)}</span>
-                    </a>
-                  </li>
-                ))}
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">配布ファイル</h2>
+              <ul className="space-y-4">
+                {attachments.map((a) => {
+                  const entries = (a.zip_entries as string[] | null) || null
+                  const preview = a.preview_text as string | null
+                  return (
+                    <li key={a.id} className="border border-gray-100 rounded-md p-3">
+                      <a
+                        href={a.file_url}
+                        download
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-blue-600 hover:underline break-all font-medium"
+                      >
+                        <span aria-hidden>⬇︎</span>
+                        {a.file_name}
+                        <span className="text-xs text-gray-400">{fmtSize(a.size_bytes)}</span>
+                      </a>
+
+                      {/* zip: 含まれるファイル一覧 */}
+                      {entries && entries.length > 0 && (
+                        <div className="mt-2 text-sm text-gray-600">
+                          <p className="text-xs text-gray-500 mb-1">含まれるファイル（{entries.length}）</p>
+                          <ul className="pl-4 list-disc space-y-0.5">
+                            {entries.map((e, i) => (
+                              <li key={i} className="break-all font-mono text-xs text-gray-600">{e}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* テキスト/案内: 本文プレビュー（開閉） */}
+                      {preview && (
+                        <details className="mt-2">
+                          <summary className="text-sm text-blue-600 cursor-pointer select-none">中身を確認する</summary>
+                          <pre className="mt-2 whitespace-pre-wrap break-words text-sm text-gray-700 bg-gray-50 rounded-md p-3 max-h-80 overflow-auto">
+                            {preview}
+                          </pre>
+                        </details>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </CardBody>
           </Card>
