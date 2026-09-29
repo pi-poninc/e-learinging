@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export type UserRole = 'admin' | 'instructor' | 'student'
+export type UserRole = 'admin' | 'instructor' | 'manager' | 'student'
 
 export interface UserProfile {
   id: string
   name: string | null
   role: UserRole
+  group_id: string | null
 }
 
 export async function getUser() {
@@ -24,19 +25,19 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, name, role')
+    .select('id, name, role, group_id')
     .eq('id', user.id)
     .maybeSingle()
 
   if (profileError) {
     console.error('Profile query error:', profileError.message)
     // Profile doesn't exist yet — return a default
-    return { id: user.id, name: user.email || null, role: 'student' }
+    return { id: user.id, name: user.email || null, role: 'student', group_id: null }
   }
 
   if (!profile) {
     // Trigger didn't fire — return fallback
-    return { id: user.id, name: user.email || null, role: 'student' }
+    return { id: user.id, name: user.email || null, role: 'student', group_id: null }
   }
 
   return profile as UserProfile
@@ -54,6 +55,15 @@ export async function requireAuth(): Promise<UserProfile> {
 export async function requireAdmin(): Promise<UserProfile> {
   const profile = await requireAuth()
   if (!['admin', 'instructor'].includes(profile.role)) {
+    redirect('/dashboard')
+  }
+  return profile
+}
+
+// admin / instructor / manager（部署マネージャー）が対象。チーム進捗の閲覧に使う。
+export async function requireStaff(): Promise<UserProfile> {
+  const profile = await requireAuth()
+  if (!['admin', 'instructor', 'manager'].includes(profile.role)) {
     redirect('/dashboard')
   }
   return profile

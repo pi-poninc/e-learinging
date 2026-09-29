@@ -95,6 +95,11 @@ export default async function AdminReportsPage() {
     g.enrolled++; g.completed += r._completed
   }
 
+  // 受講率・未着手（③）
+  const startedCount = rows.filter((r) => r.percent > 0).length
+  const notStartedRows = rows.filter((r) => r.status === '受講中' && r.percent === 0)
+  const startRate = rows.length ? Math.round((startedCount / rows.length) * 100) : 0
+
   const csvRows = rows.map((r) => ({
     氏名: r.userName, グループ: r.groupLabel, 講座: r.courseTitle,
     ステータス: r.status, 進捗率: `${r.percent}%`, 受講開始日: r.enrolledAt,
@@ -111,6 +116,35 @@ export default async function AdminReportsPage() {
         <h1 className="text-2xl font-bold text-gray-900">進捗・成績レポート</h1>
         <ReportExportButton rows={csvRows} headers={csvHeaders} filename="受講レポート.csv" />
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {[
+          { label: '受講登録（延べ）', value: `${rows.length} 件` },
+          { label: '受講率（着手済）', value: `${startRate}%` },
+          { label: '未着手', value: `${notStartedRows.length} 件` },
+        ].map((s) => (
+          <Card key={s.label}><CardBody>
+            <p className="text-sm text-gray-500">{s.label}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{s.value}</p>
+          </CardBody></Card>
+        ))}
+      </div>
+
+      {notStartedRows.length > 0 && (
+        <Card className="mb-6 border-amber-200">
+          <CardHeader>未着手アラート（{notStartedRows.length}件）</CardHeader>
+          <CardBody>
+            <div className="max-h-40 overflow-auto text-sm text-gray-700 space-y-1">
+              {notStartedRows.map((r, i) => (
+                <div key={i}>
+                  <span className="text-amber-700 font-medium">{r.userName}</span>
+                  <span className="text-gray-400"> / {r.groupLabel}</span> — {r.courseTitle}
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

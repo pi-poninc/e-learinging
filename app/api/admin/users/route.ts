@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'メールアドレスとパスワードは必須です' }, { status: 400 })
   }
 
-  if (role && !['admin', 'instructor', 'student'].includes(role)) {
+  if (role && !['admin', 'instructor', 'manager', 'student'].includes(role)) {
     return NextResponse.json({ error: '無効なロールです' }, { status: 400 })
   }
 
@@ -65,20 +65,20 @@ export async function PATCH(request: NextRequest) {
   const admin = await checkAdmin(supabase)
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { userId, role } = await request.json()
+  const { userId, role, groupId } = await request.json()
 
   if (!userId || !role) {
-    return NextResponse.json({ error: 'userId と role は必���です' }, { status: 400 })
+    return NextResponse.json({ error: 'userId と role は必須です' }, { status: 400 })
   }
 
-  if (!['admin', 'instructor', 'student'].includes(role)) {
+  if (!['admin', 'instructor', 'manager', 'student'].includes(role)) {
     return NextResponse.json({ error: '無効なロールです' }, { status: 400 })
   }
 
   const serviceClient = await createServiceClient()
   const { error } = await serviceClient
     .from('profiles')
-    .update({ role })
+    .update({ role, group_id: groupId === undefined ? undefined : (groupId || null) })
     .eq('id', userId)
 
   if (error) {

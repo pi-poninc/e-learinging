@@ -8,9 +8,10 @@ import { ReactNode } from 'react'
 interface StudentLayoutProps {
   children: ReactNode
   isAdmin?: boolean
+  showTeam?: boolean
 }
 
-export function StudentLayout({ children, isAdmin = false }: StudentLayoutProps) {
+export function StudentLayout({ children, isAdmin = false, showTeam = false }: StudentLayoutProps) {
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -35,6 +36,14 @@ export function StudentLayout({ children, isAdmin = false }: StudentLayoutProps)
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   管理画面
+                </Link>
+              )}
+              {showTeam && (
+                <Link
+                  href="/team"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  チーム
                 </Link>
               )}
               <Link

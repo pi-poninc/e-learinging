@@ -14,6 +14,7 @@ interface UserRow {
   id: string
   name: string | null
   role: string
+  group_id: string | null
   created_at: string
 }
 
@@ -31,20 +32,27 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState('student')
   const [creating, setCreating] = useState(false)
 
-  // Edit role
+  // Edit role / group
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editRole, setEditRole] = useState('')
+  const [editGroupId, setEditGroupId] = useState('')
+  const [groups, setGroups] = useState<{ id: string; name: string }[]>([])
 
   const loadUsers = useCallback(async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, name, role, created_at')
-      .order('created_at', { ascending: false })
-
+    const [{ data }, gRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, name, role, group_id, created_at')
+        .order('created_at', { ascending: false }),
+      fetch('/api/admin/groups'),
+    ])
     setUsers((data || []) as UserRow[])
+    if (gRes.ok) setGroups((await gRes.json()).groups || [])
   }, [supabase])
 
   useEffect(() => { loadUsers() }, [loadUsers])
+
+  const groupName = (id: string | null) => (id ? (groups.find((g) => g.id === id)?.name || '—') : '未所属')
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,7 +92,7 @@ export default function AdminUsersPage() {
     const res = await fetch('/api/admin/users', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, role: editRole }),
+      body: JSON.stringify({ userId, role: editRole, groupId: editGroupId || null }),
     })
 
     if (!res.ok) {
@@ -149,6 +157,7 @@ export default function AdminUsersPage() {
                 onChange={(e) => setRole(e.target.value)}
                 options={[
                   { value: 'student', label: '受講者 (student)' },
+                  { value: 'manager', label: '部署マネージャー (manager)' },
                   { value: 'instructor', label: '講師 (instructor)' },
                   { value: 'admin', label: '管理者 (admin)' },
                 ]}
@@ -165,34 +174,44 @@ export default function AdminUsersPage() {
           <h2 className="text-lg font-semibold">ユーザー一覧</h2>
         </CardHeader>
         <CardBody className="p-0">
-          <Table headers={['名前', 'ロール', '作成日', '操作']}>
+          <Table headers={['名前', 'ロール', 'グループ', '作成日', '操作']}>
             {users.map((user) => (
               <tr key={user.id}>
                 <td className="px-6 py-4 text-sm text-gray-900">{user.name || user.id.slice(0, 8)}</td>
                 <td className="px-6 py-4">
                   <Badge variant={roleVariant(user.role)}>{user.role}</Badge>
                 </td>
+                <td className="px-6 py-4 text-sm text-gray-500">{groupName(user.group_id)}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">
                   {new Date(user.created_at).toLocaleDateString('ja-JP')}
                 </td>
                 <td className="px-6 py-4">
                   {editingId === user.id ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
                         value={editRole}
                         onChange={(e) => setEditRole(e.target.value)}
                         className="rounded-md border border-gray-300 px-2 py-1 text-sm"
                       >
                         <option value="student">student</option>
+                        <option value="manager">manager</option>
                         <option value="instructor">instructor</option>
                         <option value="admin">admin</option>
+                      </select>
+                      <select
+                        value={editGroupId}
+                        onChange={(e) => setEditGroupId(e.target.value)}
+                        className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+                      >
+                        <option value="">未所属</option>
+                        {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
                       </select>
                       <Button size="sm" onClick={() => handleUpdateRole(user.id)} loading={loading}>保存</Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>取消</Button>
                     </div>
                   ) : (
-                    <Button size="sm" variant="secondary" onClick={() => { setEditingId(user.id); setEditRole(user.role) }}>
-                      ロール変更
+                    <Button size="sm" variant="secondary" onClick={() => { setEditingId(user.id); setEditRole(user.role); setEditGroupId(user.group_id || '') }}>
+                      変更
                     </Button>
                   )}
                 </td>

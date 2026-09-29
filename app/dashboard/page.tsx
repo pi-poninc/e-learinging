@@ -1,6 +1,6 @@
 import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
-import { isAdmin } from '@/lib/permissions'
+import { isAdmin, isStaff } from '@/lib/permissions'
 import { StudentLayout } from '@/components/layouts/student-layout'
 import { Card, CardBody } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -101,7 +101,7 @@ export default async function DashboardPage() {
     .limit(5)
 
   return (
-    <StudentLayout isAdmin={isAdmin(profile.role)}>
+    <StudentLayout isAdmin={isAdmin(profile.role)} showTeam={isStaff(profile.role)}>
       {announcements && announcements.length > 0 && (
         <div className="mb-6">
           <h2 className="text-lg font-bold text-gray-900 mb-3">お知らせ</h2>
