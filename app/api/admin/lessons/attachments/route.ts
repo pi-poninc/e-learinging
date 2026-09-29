@@ -4,28 +4,54 @@ import { unzipSync } from 'fflate'
 
 const BUCKET = 'lesson-files'
 const MAX_MB = 50
-const TEXT_EXT = ['md', 'txt', 'csv', 'json', 'log', 'yaml', 'yml']
+const TEXT_EXT = ['md', 'txt', 'csv', 'json', 'log', 'yaml', 'yml', 'py', 'js', 'ts', 'tsx', 'jsx', 'html', 'css', 'sh', 'ini', 'cfg', 'toml', 'xml']
+const PER_TEXT = 4000
+const MAX_ENTRY_BYTES = 200_000
 
-// 中身プレビュー（テキストは本文、zipは中のファイル名一覧）を計算
-function buildPreview(name: string, bytes: Uint8Array): { preview_text: string | null; zip_entries: string[] | null } {
+function isTextName(name: string): boolean {
+  const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
+  if (TEXT_EXT.includes(ext)) return true
+  const base = name.split('/').pop()!.toLowerCase()
+  return !base.includes('.') && (base.includes('readme') || ['license', 'makefile', 'dockerfile'].includes(base))
+}
+
+interface ZipFile { name: string; size: number; text: string | null; truncated: boolean }
+
+// 中身プレビュー（テキストは本文、zipは中の各ファイル名＋本文）を計算
+function buildPreview(name: string, bytes: Uint8Array): {
+  preview_text: string | null; zip_entries: string[] | null; zip_files: ZipFile[] | null
+} {
   const ext = name.split('.').pop()?.toLowerCase() || ''
-  if (TEXT_EXT.includes(ext)) {
+  if (isTextName(name)) {
     try {
-      return { preview_text: new TextDecoder('utf-8').decode(bytes).slice(0, 8000), zip_entries: null }
+      return { preview_text: new TextDecoder('utf-8').decode(bytes).slice(0, 8000), zip_entries: null, zip_files: null }
     } catch {
-      return { preview_text: null, zip_entries: null }
+      return { preview_text: null, zip_entries: null, zip_files: null }
     }
   }
   if (ext === 'zip') {
     try {
       const files = unzipSync(bytes)
-      const entries = Object.keys(files).filter((k) => !k.endsWith('/'))
-      return { preview_text: null, zip_entries: entries }
+      const names = Object.keys(files).filter((k) => !k.endsWith('/'))
+      const zip_files: ZipFile[] = names.map((n) => {
+        const data = files[n]
+        let text: string | null = null
+        let truncated = false
+        if (isTextName(n) && data.length <= MAX_ENTRY_BYTES) {
+          try {
+            const full = new TextDecoder('utf-8').decode(data)
+            text = full.slice(0, PER_TEXT)
+            truncated = full.length > PER_TEXT
+          } catch { /* binary */ }
+        }
+        return { name: n, size: data.length, text, truncated }
+      })
+      return { preview_text: null, zip_entries: names, zip_files }
     } catch {
-      return { preview_text: null, zip_entries: null }
+      return { preview_text: null, zip_entries: null, zip_files: null }
     }
   }
-  return { preview_text: null, zip_entries: null }
+  return { preview_text: null, zip_entries: null, zip_files: null }
 }
 
 async function requireAdminUser() {
@@ -63,7 +89,7 @@ export async function POST(request: NextRequest) {
   })
   if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
 
-  const { preview_text, zip_entries } = buildPreview(file.name, bytes)
+  const { preview_text, zip_entries, zip_files } = buildPreview(file.name, bytes)
   const { data: urlData } = svc.storage.from(BUCKET).getPublicUrl(path)
   const { data, error } = await svc.from('lesson_attachments').insert({
     lesson_id: lessonId,
@@ -73,6 +99,7 @@ export async function POST(request: NextRequest) {
     size_bytes: file.size,
     preview_text,
     zip_entries,
+    zip_files,
   }).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

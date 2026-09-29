@@ -6,6 +6,7 @@ import { Card, CardBody } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { VimeoPlayerWrapper } from '@/components/vimeo-player'
 import { LessonNotes } from '@/components/lesson-notes'
+import { Markdown } from '@/components/markdown'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
@@ -89,7 +90,7 @@ export default async function LessonPage({ params }: Props) {
   // 配布ファイル
   const { data: attachments } = await supabase
     .from('lesson_attachments')
-    .select('id, file_name, file_url, size_bytes, preview_text, zip_entries')
+    .select('id, file_name, file_url, size_bytes, preview_text, zip_entries, zip_files')
     .eq('lesson_id', lesson.id)
     .order('created_at')
 
@@ -153,8 +154,9 @@ export default async function LessonPage({ params }: Props) {
               <h2 className="text-sm font-semibold text-gray-700 mb-3">配布ファイル</h2>
               <ul className="space-y-4">
                 {attachments.map((a) => {
-                  const entries = (a.zip_entries as string[] | null) || null
+                  const zipFiles = (a.zip_files as { name: string; size: number; text: string | null; truncated: boolean }[] | null) || null
                   const preview = a.preview_text as string | null
+                  const isMd = (n: string) => n.toLowerCase().endsWith('.md')
                   return (
                     <li key={a.id} className="border border-gray-100 rounded-md p-3">
                       <a
@@ -169,26 +171,44 @@ export default async function LessonPage({ params }: Props) {
                         <span className="text-xs text-gray-400">{fmtSize(a.size_bytes)}</span>
                       </a>
 
-                      {/* zip: 含まれるファイル一覧 */}
-                      {entries && entries.length > 0 && (
-                        <div className="mt-2 text-sm text-gray-600">
-                          <p className="text-xs text-gray-500 mb-1">含まれるファイル（{entries.length}）</p>
-                          <ul className="pl-4 list-disc space-y-0.5">
-                            {entries.map((e, i) => (
-                              <li key={i} className="break-all font-mono text-xs text-gray-600">{e}</li>
+                      {/* 単体テキスト/案内の本文 */}
+                      {preview && (
+                        <details className="mt-2" open={isMd(a.file_name)}>
+                          <summary className="text-sm text-blue-600 cursor-pointer select-none">中身を確認する</summary>
+                          <div className="mt-2 bg-gray-50 rounded-md p-3 max-h-96 overflow-auto">
+                            {isMd(a.file_name)
+                              ? <Markdown>{preview}</Markdown>
+                              : <pre className="whitespace-pre-wrap break-words text-sm text-gray-700">{preview}</pre>}
+                          </div>
+                        </details>
+                      )}
+
+                      {/* zip の中身（各ファイルの本文まで） */}
+                      {zipFiles && zipFiles.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-500 mb-2">含まれるファイル（{zipFiles.length}）</p>
+                          <ul className="space-y-1">
+                            {zipFiles.map((zf, i) => (
+                              <li key={i} className="border-t border-gray-50 pt-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs text-gray-700 break-all">{zf.name}</span>
+                                  <span className="text-[10px] text-gray-400">{fmtSize(zf.size)}</span>
+                                </div>
+                                {zf.text && (
+                                  <details className="mt-1">
+                                    <summary className="text-xs text-blue-600 cursor-pointer select-none">中身</summary>
+                                    <div className="mt-1 bg-gray-50 rounded-md p-2 max-h-80 overflow-auto">
+                                      {isMd(zf.name)
+                                        ? <Markdown>{zf.text}</Markdown>
+                                        : <pre className="whitespace-pre-wrap break-words text-xs text-gray-700">{zf.text}</pre>}
+                                      {zf.truncated && <p className="text-[10px] text-gray-400 mt-1">（一部のみ表示）</p>}
+                                    </div>
+                                  </details>
+                                )}
+                              </li>
                             ))}
                           </ul>
                         </div>
-                      )}
-
-                      {/* テキスト/案内: 本文プレビュー（開閉） */}
-                      {preview && (
-                        <details className="mt-2">
-                          <summary className="text-sm text-blue-600 cursor-pointer select-none">中身を確認する</summary>
-                          <pre className="mt-2 whitespace-pre-wrap break-words text-sm text-gray-700 bg-gray-50 rounded-md p-3 max-h-80 overflow-auto">
-                            {preview}
-                          </pre>
-                        </details>
                       )}
                     </li>
                   )
