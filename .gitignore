@@ -49,3 +49,7 @@ content/**/narration.txt
 content/**/*.pdf
 # extracted skill copy (original zip is kept as reference)
 materials/video-elearning-skill/
+
+# Python cache
+__pycache__/
+*.pyc
