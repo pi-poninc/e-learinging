@@ -174,10 +174,68 @@ export interface Certificate {
 }
 
 // ============================================
+// Case simulation types (案件シミュレーター)
+// ============================================
+
+// 1局面（意思決定ポイント）
+export interface CaseScene {
+  ch: string            // 例: "局面 01"
+  title: string
+  lead: string
+  thread: { role: string; ts: string; text: string }[]
+  ask: string
+  sub?: string
+  options: { text: string; actual?: boolean }[]
+  verdictHit: string
+  verdictMiss: string
+  did: string
+  learn: string
+}
+
+// 分岐シナリオ全体（case_simulations.scenario に jsonb で格納）
+export interface CaseScenario {
+  intro: {
+    kicker: string
+    heading: string
+    paragraphs: string[]
+    facts: { l: string; v: string }[]
+    note?: string
+  }
+  roles: Record<string, { name: string; role: string; tag: string; color: string }>
+  scenes: CaseScene[]
+  recap: { t: string; d: string }[]
+  next?: { label: string; title: string; desc: string }
+}
+
+export interface CaseSimulation {
+  id: string
+  section_id: string
+  title: string
+  description: string | null
+  scenario: CaseScenario
+  sort_order: number
+  status: 'draft' | 'published' | 'archived'
+  created_at: string
+  updated_at: string
+}
+
+export interface CaseAttempt {
+  id: string
+  user_id: string
+  case_simulation_id: string
+  completed: boolean
+  path_taken: number[]
+  score: number
+  total: number
+  completed_at: string | null
+  updated_at: string
+}
+
+// ============================================
 // Course item (unified type for navigation)
 // ============================================
 
-export type CourseItemType = 'lesson' | 'quiz' | 'assignment'
+export type CourseItemType = 'lesson' | 'quiz' | 'assignment' | 'case'
 
 export interface CourseItem {
   id: string

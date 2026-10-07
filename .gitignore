@@ -53,3 +53,6 @@ materials/video-elearning-skill/
 # Python cache
 __pycache__/
 *.pyc
+
+# Slack由来の社内ネタメモ（顧客情報を含むため未コミット）
+content/slack_ネタ候補.md

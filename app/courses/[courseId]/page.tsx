@@ -6,7 +6,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import type { Lesson } from '@/lib/db'
+import type { Lesson, CaseSimulation } from '@/lib/db'
 
 interface Props {
   params: Promise<{ courseId: string }>
@@ -47,7 +47,7 @@ export default async function CourseDetailPage({ params }: Props) {
     .eq('course_id', courseId)
     .order('sort_order')
 
-  const sectionsWithLessons: { id: string; title: string; sort_order: number; lessons: Lesson[] }[] = await Promise.all(
+  const sectionsWithLessons: { id: string; title: string; sort_order: number; lessons: Lesson[]; cases: CaseSimulation[] }[] = await Promise.all(
     (sections || []).map(async (section) => {
       const query = supabase
         .from('lessons')
@@ -55,16 +55,24 @@ export default async function CourseDetailPage({ params }: Props) {
         .eq('section_id', section.id)
         .order('sort_order')
 
+      const casesQuery = supabase
+        .from('case_simulations')
+        .select('*')
+        .eq('section_id', section.id)
+        .order('sort_order')
+
       if (!admin) {
         query.eq('status', 'published')
+        casesQuery.eq('status', 'published')
       }
 
-      const { data: lessons } = await query
+      const [{ data: lessons }, { data: cases }] = await Promise.all([query, casesQuery])
       return {
         id: section.id as string,
         title: section.title as string,
         sort_order: section.sort_order as number,
         lessons: (lessons || []) as Lesson[],
+        cases: (cases || []) as CaseSimulation[],
       }
     })
   )
@@ -123,8 +131,8 @@ export default async function CourseDetailPage({ params }: Props) {
               <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
             </CardHeader>
             <CardBody className="p-0">
-              {section.lessons.length === 0 ? (
-                <p className="px-6 py-4 text-gray-500 text-sm">レッスンはまだありません。</p>
+              {section.lessons.length === 0 && section.cases.length === 0 ? (
+                <p className="px-6 py-4 text-gray-500 text-sm">コンテンツはまだありません。</p>
               ) : (
                 <ul className="divide-y divide-gray-200">
                   {section.lessons.map((lesson, index) => {
@@ -173,6 +181,27 @@ export default async function CourseDetailPage({ params }: Props) {
                       </li>
                     )
                   })}
+                  {section.cases.map((sim) => (
+                    <li key={sim.id}>
+                      <Link
+                        href={`/cases/${sim.id}`}
+                        className="flex items-center px-6 py-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <span className="w-8 h-8 flex items-center justify-center rounded-full bg-teal-50 text-teal-600 mr-4">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                          </svg>
+                        </span>
+                        <div className="flex-1 flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">{sim.title}</span>
+                          <Badge variant="success">案件追体験</Badge>
+                        </div>
+                        {sim.status === 'draft' && admin && (
+                          <Badge variant="warning">下書き</Badge>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               )}
             </CardBody>

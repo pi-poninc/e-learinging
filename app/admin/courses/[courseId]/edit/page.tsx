@@ -10,10 +10,14 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import type { Course, Section, Lesson, Quiz, Assignment } from '@/lib/db'
+import type { Course, Section, Lesson, Quiz, Assignment, CaseSimulation } from '@/lib/db'
 import Link from 'next/link'
 
-type SectionItem = { type: 'lesson'; data: Lesson } | { type: 'quiz'; data: Quiz } | { type: 'assignment'; data: Assignment }
+type SectionItem =
+  | { type: 'lesson'; data: Lesson }
+  | { type: 'quiz'; data: Quiz }
+  | { type: 'assignment'; data: Assignment }
+  | { type: 'case'; data: CaseSimulation }
 type SectionWithItems = Section & { items: SectionItem[] }
 
 export default function EditCoursePage() {
@@ -46,16 +50,18 @@ export default function EditCoursePage() {
 
     const sectionsWithItems: SectionWithItems[] = await Promise.all(
       (sectionsData || []).map(async (section) => {
-        const [lessonsRes, quizzesRes, assignmentsRes] = await Promise.all([
+        const [lessonsRes, quizzesRes, assignmentsRes, casesRes] = await Promise.all([
           supabase.from('lessons').select('*').eq('section_id', section.id).order('sort_order'),
           supabase.from('quizzes').select('*').eq('section_id', section.id).order('sort_order'),
           supabase.from('assignments').select('*').eq('section_id', section.id).order('sort_order'),
+          supabase.from('case_simulations').select('*').eq('section_id', section.id).order('sort_order'),
         ])
 
         const items: SectionItem[] = [
           ...(lessonsRes.data || []).map((l) => ({ type: 'lesson' as const, data: l as Lesson })),
           ...(quizzesRes.data || []).map((q) => ({ type: 'quiz' as const, data: q as Quiz })),
           ...(assignmentsRes.data || []).map((a) => ({ type: 'assignment' as const, data: a as Assignment })),
+          ...(casesRes.data || []).map((c) => ({ type: 'case' as const, data: c as CaseSimulation })),
         ].sort((a, b) => a.data.sort_order - b.data.sort_order)
 
         return { ...section, items } as SectionWithItems
@@ -129,11 +135,19 @@ export default function EditCoursePage() {
     if (data) router.push(`/admin/assignments/${data.id}/edit`)
   }
 
+  const handleAddCase = async (sectionId: string) => {
+    const { data } = await supabase.from('case_simulations').insert({
+      section_id: sectionId, title: '新しい案件シミュレーター', sort_order: getMaxSortOrder(sectionId) + 1,
+    }).select().single()
+    if (data) router.push(`/admin/cases/${data.id}/edit`)
+  }
+
   const typeLabel = (type: string) => {
     switch (type) {
       case 'lesson': return { text: 'レッスン', color: 'info' as const }
       case 'quiz': return { text: 'テスト', color: 'warning' as const }
       case 'assignment': return { text: '課題', color: 'default' as const }
+      case 'case': return { text: '案件追体験', color: 'success' as const }
       default: return { text: type, color: 'default' as const }
     }
   }
@@ -143,6 +157,7 @@ export default function EditCoursePage() {
       case 'lesson': return `/admin/lessons/${item.data.id}/edit`
       case 'quiz': return `/admin/quizzes/${item.data.id}/edit`
       case 'assignment': return `/admin/assignments/${item.data.id}/edit`
+      case 'case': return `/admin/cases/${item.data.id}/edit`
     }
   }
 
@@ -190,6 +205,7 @@ export default function EditCoursePage() {
                   <Button variant="secondary" size="sm" onClick={() => handleAddLesson(section.id)}>+ レッスン</Button>
                   <Button variant="secondary" size="sm" onClick={() => handleAddQuiz(section.id)}>+ テスト</Button>
                   <Button variant="secondary" size="sm" onClick={() => handleAddAssignment(section.id)}>+ 課題</Button>
+                  <Button variant="secondary" size="sm" onClick={() => handleAddCase(section.id)}>+ 案件追体験</Button>
                   <Button variant="danger" size="sm" onClick={() => handleDeleteSection(section.id)}>削除</Button>
                 </div>
               </div>

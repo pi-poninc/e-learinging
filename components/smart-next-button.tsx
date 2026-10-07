@@ -7,13 +7,14 @@ import type { CourseItem } from '@/lib/db'
 interface SmartNextButtonProps {
   courseId: string
   currentItemId: string
-  currentItemType: 'lesson' | 'quiz' | 'assignment'
+  currentItemType: 'lesson' | 'quiz' | 'assignment' | 'case'
 }
 
 const typeLabels = {
   lesson: '次のレッスンへ',
   quiz: 'テストへ進む',
   assignment: '課題へ進む',
+  case: '案件シミュレーターへ進む',
 }
 
 function itemUrl(item: CourseItem) {
@@ -21,6 +22,7 @@ function itemUrl(item: CourseItem) {
     case 'lesson': return `/lessons/${item.id}`
     case 'quiz': return `/quizzes/${item.id}`
     case 'assignment': return `/assignments/${item.id}`
+    case 'case': return `/cases/${item.id}`
   }
 }
 

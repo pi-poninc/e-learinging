@@ -37,13 +37,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ items: [], isSequential: course?.is_sequential || false })
   }
 
-  // Fetch lessons, quizzes, assignments in parallel
-  const [lessonsRes, quizzesRes, assignmentsRes] = await Promise.all([
+  // Fetch lessons, quizzes, assignments, case simulations in parallel
+  const [lessonsRes, quizzesRes, assignmentsRes, casesRes] = await Promise.all([
     supabase.from('lessons').select('id, title, sort_order, section_id, status')
       .in('section_id', sectionIds),
     supabase.from('quizzes').select('id, title, sort_order, section_id, status')
       .in('section_id', sectionIds),
     supabase.from('assignments').select('id, title, sort_order, section_id, status')
+      .in('section_id', sectionIds),
+    supabase.from('case_simulations').select('id, title, sort_order, section_id, status')
       .in('section_id', sectionIds),
   ])
 
@@ -51,8 +53,9 @@ export async function GET(request: NextRequest) {
   const lessonIds = (lessonsRes.data || []).map((l) => l.id)
   const quizIds = (quizzesRes.data || []).map((q) => q.id)
   const assignmentIds = (assignmentsRes.data || []).map((a) => a.id)
+  const caseIds = (casesRes.data || []).map((c) => c.id)
 
-  const [progressRes, attemptsRes, submissionsRes] = await Promise.all([
+  const [progressRes, attemptsRes, submissionsRes, caseAttemptsRes] = await Promise.all([
     lessonIds.length > 0
       ? supabase.from('lesson_progress').select('lesson_id, completed')
           .eq('user_id', user.id).in('lesson_id', lessonIds)
@@ -65,6 +68,10 @@ export async function GET(request: NextRequest) {
       ? supabase.from('assignment_submissions').select('assignment_id, status')
           .eq('user_id', user.id).in('assignment_id', assignmentIds)
       : { data: [] },
+    caseIds.length > 0
+      ? supabase.from('case_attempts').select('case_simulation_id, completed')
+          .eq('user_id', user.id).in('case_simulation_id', caseIds)
+      : { data: [] },
   ])
 
   const completedLessons = new Set(
@@ -75,6 +82,9 @@ export async function GET(request: NextRequest) {
   )
   const approvedAssignments = new Set(
     (submissionsRes.data || []).filter((s) => s.status === 'approved').map((s) => s.assignment_id)
+  )
+  const completedCases = new Set(
+    (caseAttemptsRes.data || []).filter((a) => a.completed).map((a) => a.case_simulation_id)
   )
 
   // Build unified items list
@@ -118,6 +128,20 @@ export async function GET(request: NextRequest) {
       section_id: assignment.section_id,
       status: assignment.status,
       completed: approvedAssignments.has(assignment.id),
+      locked: false,
+    })
+  }
+
+  for (const sim of casesRes.data || []) {
+    if (!isAdminUser && sim.status !== 'published') continue
+    items.push({
+      id: sim.id,
+      type: 'case',
+      title: sim.title,
+      sort_order: sim.sort_order,
+      section_id: sim.section_id,
+      status: sim.status,
+      completed: completedCases.has(sim.id),
       locked: false,
     })
   }
