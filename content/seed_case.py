@@ -33,6 +33,7 @@ def main():
     ap.add_argument("--desc", default="")
     ap.add_argument("--course", help="この名前で講座を新規作成（--section-id と排他）")
     ap.add_argument("--section-id", help="既存セクションに追記する場合のセクションID")
+    ap.add_argument("--update", dest="update_id", help="既存の case_simulation を更新する場合のcase ID（scenario/title/descをPATCH）")
     ap.add_argument("--start-order", type=int, default=0)
     ap.add_argument("--status", default="published", choices=["draft", "published", "archived"])
     a = ap.parse_args()
@@ -46,6 +47,19 @@ def main():
     print(f"シナリオ読み込み: {len(scenario.get('scenes', []))} 局面 ({scenario_path.name})")
 
     env = b.load_env()
+
+    # 既存の案件シミュレーターを更新（scenario/title/descを差し替え）
+    if a.update_id:
+        payload = {"scenario": scenario}
+        if a.title:
+            payload["title"] = a.title
+        if a.desc:
+            payload["description"] = a.desc
+        b.sb(env, "PATCH", f"case_simulations?id=eq.{a.update_id}", payload)
+        print(f"案件シミュレーター更新: {a.update_id}")
+        print(f"直接URL:  /cases/{a.update_id}")
+        print("完成 🎬（更新）")
+        return
 
     if a.section_id:
         section_id, course_id = a.section_id, None

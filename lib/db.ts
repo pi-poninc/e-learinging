@@ -177,18 +177,31 @@ export interface Certificate {
 // Case simulation types (案件シミュレーター)
 // ============================================
 
+// 情報カード（ブリーフィングで提示する事前情報のまとまり）
+export interface CaseInfoCard {
+  label: string         // 例: "背景" / "関係者" / "制約・前提" / "いま分かっていること" / "論点"
+  items: string[]
+}
+
 // 1局面（意思決定ポイント）
 export interface CaseScene {
   ch: string            // 例: "局面 01"
   title: string
   lead: string
+  // --- ブリーフィング（判断の前に与える事前情報。すべて任意・後方互換） ---
+  situation?: string[]  // より詳しい状況説明（段落）
+  brief?: CaseInfoCard[] // 背景・関係者・制約・論点などの情報カード
+  // --- 現場ログ ---
   thread: { role: string; ts: string; text: string }[]
+  // --- 意思決定 ---
   ask: string
   sub?: string
   options: { text: string; actual?: boolean }[]
+  // --- 答え合わせ ---
   verdictHit: string
   verdictMiss: string
   did: string
+  outcome?: string      // その後どうなったか（任意）
   learn: string
 }
 
@@ -199,6 +212,7 @@ export interface CaseScenario {
     heading: string
     paragraphs: string[]
     facts: { l: string; v: string }[]
+    dossier?: CaseInfoCard[]  // 案件全体のブリーフィング（体制・制約・経緯など・任意）
     note?: string
   }
   roles: Record<string, { name: string; role: string; tag: string; color: string }>
