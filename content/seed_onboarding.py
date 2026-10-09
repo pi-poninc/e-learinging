@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""新人オンボーディングコースを一括作成する。
+
+作るもの（1コース / 1セクション）:
+  sort 0: レッスン「はじめに：入社初日チェックリスト」
+  sort 1: （空き）→ ①実務オペ動画を build_course.py --start-order 1 で追加
+  sort 2: テスト「実務オペ 確認クイズ」
+  sort 3: レッスン「pipon用語辞典」
+  sort 4: テスト「pipon用語 クイズ」
+  sort 5: （空き）→ ④ロールプレイを seed_case.py --start-order 5 で追加
+  sort 6: 課題「ハンズオン課題」
+  sort 7: レッスン「学びの地図（次に見る講座）」
+  ＋ 管理者を受講登録
+
+build.py の load_env / sb を再利用（.env.local の SUPABASE_* を使用）。
+実行後に表示される section_id を使って、動画とロールプレイを追加する。
+"""
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+ADMIN_UUID = "bab3dae7-813b-43ee-b7f9-200ca779dcfd"
+sys.path.insert(0, str(ROOT / "content"))
+import build as b  # noqa: E402
+
+env = b.load_env()
+
+
+def lesson(section_id, title, body, order):
+    le = b.sb(env, "POST", "lessons", {
+        "section_id": section_id, "title": title, "body": body,
+        "sort_order": order, "status": "published"})[0]
+    print(f"  lesson[{order}] {title}  {le['id']}")
+    return le["id"]
+
+
+def assignment(section_id, title, desc, order):
+    a = b.sb(env, "POST", "assignments", {
+        "section_id": section_id, "title": title, "description": desc,
+        "sort_order": order, "status": "published"})[0]
+    print(f"  assignment[{order}] {title}  {a['id']}")
+    return a["id"]
+
+
+def quiz(section_id, title, desc, order, questions, passing=70):
+    q = b.sb(env, "POST", "quizzes", {
+        "section_id": section_id, "title": title, "description": desc,
+        "passing_score": passing, "sort_order": order, "status": "published"})[0]
+    for qi, qq in enumerate(questions):
+        qrow = b.sb(env, "POST", "quiz_questions", {
+            "quiz_id": q["id"], "question_type": qq["type"],
+            "question_text": qq["q"], "explanation": qq.get("exp", ""),
+            "sort_order": qi, "points": 1})[0]
+        for oi, (text, correct) in enumerate(qq["opts"]):
+            b.sb(env, "POST", "quiz_options", {
+                "question_id": qrow["id"], "option_text": text,
+                "is_correct": correct, "sort_order": oi})
+    print(f"  quiz[{order}] {title}  {q['id']}  ({len(questions)}問)")
+    return q["id"]
+
+
+DAY1 = """ようこそpiponへ。入社直後〜最初の1週間で、まずここを押さえましょう。
+
+【アカウントまわり（最優先）】
+・Backlog / GitHub / 各種ツールの招待が来たら、期限内に承認し、ログインできることまで確認する
+・Slackで自分宛てメンションがDM通知されるよう設定する（確認漏れ防止）
+・自分のアイコンを設定する（視認性のため、Slackと他ツールで揃える）
+
+【場所を把握する】
+・担当案件の「決定事項シート」がどこにあるか確認する（仕様で迷ったら、まずここ）
+・課題管理はBacklog。自分に割り振られた課題の見方を確認する
+・議事録・資料の置き場（共通の1箇所）を確認する
+
+【まず見る・読む】
+・この講座「pipon流・実務オペレーションの型」を見る
+・「pipon用語辞典」にざっと目を通す（分からない言葉で止まらないように）
+・「FDEの基本」「案件追体験シリーズ」を見る
+
+【心構え】
+・分からないことは、抱え込まず早めに投げる（先輩・ブリッジ役・確認事項として起票）
+・見てから作る。作ってから聞かない
+・動くもの（working product）で会話する
+
+このコースは、上から順に進めると、piponの仕事の回し方がひととおり分かるように並べてあります。"""
+
+GLOSSARY = """piponの案件でよく出てくる言葉です。分からない言葉で止まらないよう、ざっと目を通しておきましょう。
+
+・FDE（フォワードデプロイドエンジニア）：顧客の現場に入り込み、課題を自分の手で解くエンジニア。仕様書ではなく業務そのものを情報源にする。
+・working product（動くもの）：資料ではなく、実際に動くプロダクトで会話する、というpiponの基本姿勢。
+・α版 / β版：開発初期の試作がα版、ある程度形になった版がβ版。人によって認識がズレやすいので、工程の定義を1枚に固定して揃える。
+・UAT（ユーザー受け入れテスト）：本来は「合意済み要件に対する検収行為」＝検収そのもの。企画段階の試用をUATと呼ぶと、検収タイミングが契約上あいまいになるので注意。
+・フィールドテスト（FT）：実際の現場で試用して、要求や考慮漏れを炙り出すこと。検収ではない。
+・PoC：概念実証。作れるか・効くかを小さく試すこと。
+・デグレ／デグレ禁止線：デグレ＝今できていたことができなくなる劣化。現行でできることは落とさない、という線が「デグレ禁止線」。優先度の基準になる。
+・未確定事項一覧：まだ決まり切っていないことを一覧にして、中間納品に添えるもの。曖昧さを隠さず可視化する。
+・決定事項シート：Slack・Backlog・定例・MTGで決まったことを集約した1枚のシート。仕様で迷ったらまずここを見る。
+・Backlog：課題（チケット）管理ツール。起票→確認→対応→完了で回す。
+・内部確認中（Backlogのステータス）：QAや仕様を確認中で作業が止まっている状態。「処理中」と区別する。
+・レビュー中（Backlogのステータス）：仕様確定済みで、設計書を修正する作業が必要、という意味。
+・PR（プルリクエスト）／main／ブランチ：GitHubでの変更の出し方。ブランチを切って作業→PR→レビュー→mainにマージ。設計書もこの流れで管理する。
+・BFF（Backend for Frontend）：各フロント向けの中間サーバー。システムが複数のBFFに分かれることがある。
+・JWT／JWKS／kid／鍵ローテーション：サービス間の内部認証で使うトークンと鍵の仕組み。鍵は必ず替える前提で、新旧を併存させて無停止で入れ替える。
+・IdP／EntraID／BetterAuth：認証まわり。IdP＝認証を担う基盤、EntraIDはその一例、BetterAuthは採用した認証ライブラリ。
+・AHIS：この案件で扱う電子カルテシステムの呼称（動物病院向け）。
+・ステコミ（ステアリングコミッティ）：プロジェクトの方針を決める上位の会議体。
+・医療連携マイページ／飼い主さまマイページ：病院向け・一般ユーザー向けの2種のマイページ。
+
+分からない言葉が増えてきたら、この辞典に追記していきましょう（用語も、育てるものです）。"""
+
+MAP = """このオンボーディングを終えたら、次はこの順で学ぶのがおすすめです。ダッシュボードから各講座に進めます。
+
+【1】FDEの基本 ／ 顧客ワークショップの回し方
+・piponの仕事の“そもそも”を押さえる基礎講座。
+
+【2】案件追体験シリーズ（全5章・インタラクティブ＋動画）
+・実案件を、あなた自身がFDEとして追体験する。各章「ブリーフィング→判断→答え合わせ」。
+  第1章 要件整理フェーズ
+  第2章 複数社連携の開発マネジメント
+  第3章 認証・インフラの設計判断
+  第4章 現場起点の機能設計
+  第5章 速いQA運用
+・このコース内の「ロールプレイ」で基本動作を練習してから進むと、より効きます。
+
+【3】現場の前提知識シリーズ
+・工場の電気設備入門、超硬チップAI選別(TA選別)、はじめてのGitとコマンド、など。
+・担当する案件に合わせて、必要なものを見てください。
+
+迷ったら、まず決定事項シートと用語辞典。それでも分からなければ、先輩に投げる。これがpipon流です。"""
+
+ASSIGN = """手を動かして、実務の型を体に入れましょう。以下から1つ以上を選び、成果物を提出してください（フォーマットは問いません：スプレッドシート・Markdown・スクショ等）。
+
+【課題A：議事録 → 決定事項シート化】
+サンプル議事録（または自分が参加した会議のメモ）から、「決定事項」だけを抜き出して1枚のシートにまとめてください。
+・各行に：決まったこと／決めた日／根拠（どの会議・スレッドか）／関連リンク
+・“決定”と“まだ未確定のこと（宿題）”を分けること
+
+【課題B：QAリスト → Backlog起票粒度に整理】
+ばらばらに並んだ確認事項（QA）のリストを、Backlogに起票しやすい形に整理してください。
+・重複を排除し、関連する項目を並べ替える（例：Aが決まればCが決まる、の順に）
+・各項目に「カテゴリ／親・子の関係」を付ける
+
+【課題C：現場観察メモ（任意・実地）】
+身近な業務を1つ選び、担当者の作業を観察し、「依頼されそうなこと」と「本当のボトルネック」を分けて書いてください。
+
+提出後、レビューしてフィードバックします。正解を出すことより、“型どおりに手を動かせること”が目的です。"""
+
+
+def main():
+    c = b.sb(env, "POST", "courses", {
+        "title": "pipon 新人オンボーディング",
+        "description": "入社直後の新人が、piponの仕事の回し方にすぐ慣れるための必修コース。実務オペの型・用語・ロールプレイ・ハンズオン課題をまとめています。上から順に進めてください。",
+        "status": "published", "is_sequential": False, "created_by": ADMIN_UUID})[0]
+    se = b.sb(env, "POST", "sections", {
+        "course_id": c["id"], "title": "本編", "sort_order": 0})[0]
+    sid = se["id"]
+    print(f"講座『pipon 新人オンボーディング』作成: {c['id']}")
+    print(f"section_id: {sid}")
+
+    lesson(sid, "はじめに：入社初日チェックリスト", DAY1, 0)
+    # sort 1 は ①実務オペ動画（build_course.py --start-order 1）
+    quiz(sid, "実務オペ 確認クイズ", "実務オペの型が身についたか確認します。", 2, [
+        {"type": "single_choice", "q": "会議やSlackで決まった大事な仕様は、どこに残すのが基本？",
+         "opts": [("各自のメモ", False), ("決定事項シート（1枚に集約・日次更新）", True), ("口頭で共有して終わり", False), ("DMで関係者に送る", False)],
+         "exp": "決定は散らばる前提で、集約点（決定事項シート）を1つ決めて日次更新する。"},
+        {"type": "single_choice", "q": "アカウント招待（Backlog/GitHub等）が来たら、まず何をする？",
+         "opts": [("時間があるとき対応する", False), ("期限内に承認し、ログインできることまで確認する", True), ("他の人がやってくれるのを待つ", False), ("使うときに承認する", False)],
+         "exp": "クライアントに再依頼をさせないため、招待は“作業”として期限内に確実に捌く。"},
+        {"type": "single_choice", "q": "大量のQA（確認事項）。どう回すのが速い？",
+         "opts": [("きれいに整形してから1件ずつ登録", False), ("まず全部起票→確認→分からない分だけ修正", True), ("重要そうなものだけ起票", False), ("口頭でまとめて確認", False)],
+         "exp": "整形より先に全部出すと、回答側に全体と関連が見えて速い。"},
+        {"type": "true_false", "q": "内容が薄く不参加も多い定例は、その回を中止してよい。",
+         "opts": [("○（正しい）", True), ("×（間違い）", False)],
+         "exp": "惰性の会議を止めるのはサボりではなく配慮。通知も会議も“要る人に要る分だけ”。"},
+        {"type": "single_choice", "q": "設計書を更新するときの流れは？",
+         "opts": [("ファイルを直接上書きして共有", False), ("ブランチを切って→PR→レビュー→mainにマージ", True), ("Slackに新版を貼る", False), ("口頭で伝える", False)],
+         "exp": "設計書もコードと同じく、ブランチ→PR→mainマージで回す。"},
+    ])
+    lesson(sid, "pipon用語辞典", GLOSSARY, 3)
+    quiz(sid, "pipon用語 クイズ", "よく出る用語の理解を確認します。", 4, [
+        {"type": "true_false", "q": "UATは本来「合意済み要件に対する検収行為」である。",
+         "opts": [("○（正しい）", True), ("×（間違い）", False)],
+         "exp": "UAT＝検収。企画段階の試用をUATと呼ぶと、検収タイミングが契約上あいまいになる。"},
+        {"type": "single_choice", "q": "「デグレ禁止線」とは？",
+         "opts": [("新機能を必ず入れる線", False), ("現行でできていることは落とさない、という線", True), ("納期を守る線", False), ("予算の上限", False)],
+         "exp": "現行でできることを落とすと紙やExcelに逆戻りする。これを禁止線にして優先度を引く。"},
+        {"type": "single_choice", "q": "Backlogの「内部確認中」ステータスの意味は？",
+         "opts": [("作業が完了した", False), ("QAや仕様を確認中で、作業が止まっている", True), ("レビュー待ち", False), ("着手前", False)],
+         "exp": "確認待ちで止まっている課題を「処理中」と区別するためのステータス。"},
+        {"type": "single_choice", "q": "「未確定事項一覧」を中間納品に添える目的は？",
+         "opts": [("ページ数を増やすため", False), ("何が決まっていないかを可視化し、未完成でも信頼される納品にするため", True), ("責任を回避するため", False), ("顧客に宿題を出すため", False)],
+         "exp": "曖昧さは隠すより可視化する方が、信頼される納品になる。"},
+        {"type": "true_false", "q": "FDEは、仕様書を待つのではなく、業務そのものを情報源にする。",
+         "opts": [("○（正しい）", True), ("×（間違い）", False)],
+         "exp": "見てから作る。作ってから聞かない、がFDEの基本。"},
+    ])
+    # sort 5 は ④ロールプレイ（seed_case.py --start-order 5）
+    assignment(sid, "ハンズオン課題：型を手で動かす", ASSIGN, 6)
+    lesson(sid, "学びの地図：次に見る講座", MAP, 7)
+
+    b.sb(env, "POST", "enrollments", {"user_id": ADMIN_UUID, "course_id": c["id"], "status": "active"})
+    print(f"\n管理者を受講登録しました。")
+    print(f"受講URL: /courses/{c['id']}")
+    print(f"\n次のコマンドで ①動画 と ④ロールプレイ を追加:")
+    print(f"  python3 content/build_course.py --section-id {sid} --start-order 1 --voice <ID> \"pipon流・実務オペレーションの型:content/37-pipon-ops\"")
+    print(f"  python3 content/seed_case.py --scenario content/case_onboarding_roleplay.json --section-id {sid} --start-order 5 --title \"ロールプレイ：はじめての現場\"")
+
+
+if __name__ == "__main__":
+    main()
