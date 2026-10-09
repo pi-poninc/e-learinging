@@ -5,6 +5,7 @@ import { StudentLayout } from '@/components/layouts/student-layout'
 import { Card, CardBody } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { VimeoPlayerWrapper } from '@/components/vimeo-player'
+import { LessonCompleteButton } from '@/components/lesson-complete-button'
 import { LessonNotes } from '@/components/lesson-notes'
 import { Markdown } from '@/components/markdown'
 import Link from 'next/link'
@@ -216,6 +217,13 @@ export default async function LessonPage({ params }: Props) {
               </ul>
             </CardBody>
           </Card>
+        )}
+
+        {/* 読み物レッスン（動画なし）の完了ボタン */}
+        {!(lesson.vimeo_url || lesson.vimeo_video_id) && (
+          <div className="mb-6">
+            <LessonCompleteButton lessonId={lesson.id} initialCompleted={!!progress?.completed} />
+          </div>
         )}
 
         {/* 学びメモ */}
