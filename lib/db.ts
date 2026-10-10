@@ -246,6 +246,38 @@ export interface CaseAttempt {
 }
 
 // ============================================
+// Learning path types（学習ロードマップ）
+// ============================================
+
+export interface LearningPath {
+  id: string
+  title: string
+  description: string | null
+  status: 'draft' | 'published' | 'archived'
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PathItem {
+  id: string
+  path_id: string
+  course_id: string
+  sort_order: number
+  target_days: number | null
+  milestone_label: string | null
+  created_at: string
+}
+
+export interface PathEnrollment {
+  id: string
+  user_id: string
+  path_id: string
+  started_at: string
+  status: 'active' | 'completed'
+}
+
+// ============================================
 // Course item (unified type for navigation)
 // ============================================
 

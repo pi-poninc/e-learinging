@@ -8,6 +8,7 @@ import { ReactNode } from 'react'
 const navItems = [
   { href: '/admin', label: 'ダッシュボード' },
   { href: '/admin/courses', label: '講座管理' },
+  { href: '/admin/paths', label: '学習ロードマップ' },
   { href: '/admin/users', label: 'ユーザー管理' },
   { href: '/admin/groups', label: 'グループ管理' },
   { href: '/admin/enrollments', label: '受講登録' },

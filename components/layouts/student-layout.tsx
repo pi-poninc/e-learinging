@@ -53,6 +53,12 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
                 マイコース
               </Link>
               <Link
+                href="/journey"
+                className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              >
+                FDEロードマップ
+              </Link>
+              <Link
                 href="/submit"
                 className="text-sm text-gray-600 hover:text-gray-900"
               >
