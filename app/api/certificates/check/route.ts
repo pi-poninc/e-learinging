@@ -32,16 +32,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ completed: false })
   }
 
-  // Get all published lessons, quizzes, assignments
-  const [lessonsRes, quizzesRes, assignmentsRes] = await Promise.all([
+  // Get all published lessons, quizzes, assignments, case simulations
+  const [lessonsRes, quizzesRes, assignmentsRes, casesRes] = await Promise.all([
     supabase.from('lessons').select('id').in('section_id', sectionIds).eq('status', 'published'),
     supabase.from('quizzes').select('id').in('section_id', sectionIds).eq('status', 'published'),
     supabase.from('assignments').select('id').in('section_id', sectionIds).eq('status', 'published'),
+    supabase.from('case_simulations').select('id').in('section_id', sectionIds).eq('status', 'published'),
   ])
 
   const lessonIds = (lessonsRes.data || []).map((l) => l.id)
   const quizIds = (quizzesRes.data || []).map((q) => q.id)
   const assignmentIds = (assignmentsRes.data || []).map((a) => a.id)
+  const caseIds = (casesRes.data || []).map((c) => c.id)
+
+  // Guard: a course with zero published content should not auto-issue a certificate
+  if (lessonIds.length + quizIds.length + assignmentIds.length + caseIds.length === 0) {
+    return NextResponse.json({ completed: false, reason: 'no_content' })
+  }
 
   // Check all lessons completed
   if (lessonIds.length > 0) {
@@ -90,6 +97,20 @@ export async function POST(request: NextRequest) {
       if (!approved) {
         return NextResponse.json({ completed: false, reason: 'assignments_incomplete' })
       }
+    }
+  }
+
+  // Check all case simulations completed
+  if (caseIds.length > 0) {
+    const { count } = await supabase
+      .from('case_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('completed', true)
+      .in('case_simulation_id', caseIds)
+
+    if ((count || 0) < caseIds.length) {
+      return NextResponse.json({ completed: false, reason: 'cases_incomplete' })
     }
   }
 

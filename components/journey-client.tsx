@@ -102,8 +102,12 @@ export function JourneyClient() {
             </div>
             {p.enrolled ? (
               <div className="text-right flex-none">
-                <div className="text-2xl font-extrabold text-blue-600 tabular-nums leading-none">{p.overallPct}%</div>
-                <div className="text-xs text-gray-400">
+                {p.overallPct >= 100 ? (
+                  <span className="inline-block rounded-full bg-green-600 text-white text-sm font-bold px-3 py-1">🎓 修了！</span>
+                ) : (
+                  <div className="text-2xl font-extrabold text-blue-600 tabular-nums leading-none">{p.overallPct}%</div>
+                )}
+                <div className="text-xs text-gray-400 mt-0.5">
                   {p.startedAt ? `${fmtDate(p.startedAt)} 開始` : ''}
                 </div>
               </div>
