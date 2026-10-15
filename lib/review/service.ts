@@ -17,6 +17,7 @@ export interface EffectiveReviewSettings {
   newReviewerCheckCount: number
   aiCoachEnabled: boolean
   aiCoachDailyLimit: number
+  aiDraftEnabled: boolean
 }
 
 export function defaultReviewSettings(): EffectiveReviewSettings {
@@ -33,6 +34,7 @@ export function defaultReviewSettings(): EffectiveReviewSettings {
     newReviewerCheckCount: 10,
     aiCoachEnabled: false,
     aiCoachDailyLimit: 20,
+    aiDraftEnabled: false,
   }
 }
 
@@ -54,6 +56,7 @@ export async function getReviewSettings(supabase: any, courseId: string): Promis
     newReviewerCheckCount: data.new_reviewer_check_count ?? 10,
     aiCoachEnabled: data.ai_coach_enabled ?? false,
     aiCoachDailyLimit: data.ai_coach_daily_limit ?? 20,
+    aiDraftEnabled: data.ai_draft_enabled ?? false,
   }
 }
 

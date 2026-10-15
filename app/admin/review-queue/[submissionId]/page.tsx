@@ -1,6 +1,7 @@
 import { requireStaff } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { submissionReviewEnabled } from '@/lib/flags'
+import { getReviewSettings } from '@/lib/review/service'
 import { AdminLayout } from '@/components/layouts/admin-layout'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -38,9 +39,10 @@ export default async function ReviewEditorPage({ params }: Props) {
 
   const { data: fb } = await supabase
     .from('review_feedback')
-    .select('reviewer_id, status, good_points, improvements, next_action')
+    .select('reviewer_id, status, good_points, improvements, next_action, is_exemplar')
     .eq('submission_id', submissionId)
     .maybeSingle()
+  const settings = await getReviewSettings(supabase, sub.course_id)
 
   const claimedByMe = !!fb && fb.reviewer_id === me.id && fb.status !== 'published'
   const claimedByOther = !!fb && fb.reviewer_id !== me.id && fb.status !== 'published'
@@ -112,6 +114,8 @@ export default async function ReviewEditorPage({ params }: Props) {
                 claimedByOther={claimedByOther}
                 published={published}
                 rubricItems={rubricItems}
+                aiDraftEnabled={settings.aiDraftEnabled}
+                isExemplar={!!fb?.is_exemplar}
                 initial={fb ? { good: fb.good_points || '', improvements: fb.improvements || '', next: fb.next_action || '' } : undefined}
               />
             </CardBody>

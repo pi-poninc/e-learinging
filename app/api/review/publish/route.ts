@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { submissionReviewEnabled } from '@/lib/flags'
 import { STAFF_ROLES } from '@/lib/review/service'
 import { finalizeReview } from '@/lib/review/finalize'
+import { rewriteRate } from '@/lib/review/ai-draft'
 
 export async function POST(request: NextRequest) {
   if (!submissionReviewEnabled()) return NextResponse.json({ error: '機能が無効です' }, { status: 404 })
@@ -22,8 +23,17 @@ export async function POST(request: NextRequest) {
   }
 
   const { data: fb } = await supabase
-    .from('review_feedback').select('id, claimed_at').eq('submission_id', submissionId).maybeSingle()
+    .from('review_feedback').select('id, claimed_at, ai_draft').eq('submission_id', submissionId).maybeSingle()
   if (!fb) return NextResponse.json({ error: 'まず担当（確保）してください' }, { status: 400 })
+
+  // AI下書きからの書き換え率（好循環の分析用）
+  let aiRewriteRate: number | null = null
+  const draft = fb.ai_draft as { good_points?: string; improvements?: string; next_action?: string } | null
+  if (draft) {
+    const d = `${draft.good_points || ''}\n${draft.improvements || ''}\n${draft.next_action || ''}`
+    const f = `${goodPoints || ''}\n${improvements || ''}\n${nextAction || ''}`
+    aiRewriteRate = rewriteRate(d, f)
+  }
 
   // 新任添削者（needs_approval_remaining>0）は、公開前にベテラン確認が必要
   const { data: rp } = await supabase.from('reviewer_profiles').select('needs_approval_remaining').eq('user_id', user.id).maybeSingle()
@@ -43,6 +53,7 @@ export async function POST(request: NextRequest) {
       rubric_scores: rubricScores && typeof rubricScores === 'object' ? rubricScores : {},
       published_at: newReviewer ? null : now.toISOString(),
       review_duration_seconds: dur,
+      ai_rewrite_rate: aiRewriteRate,
     })
     .eq('id', fb.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

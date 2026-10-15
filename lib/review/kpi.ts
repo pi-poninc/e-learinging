@@ -19,6 +19,7 @@ export interface CourseKpi {
   certifiedUsers: number
   cohortMembers: number
   demoEntries: number
+  avgAiRewriteRate: number | null   // AI下書きからの平均書き換え率(%)
 }
 
 const EARLY_WINDOW_DAYS = 7
@@ -33,7 +34,7 @@ export async function computeCourseKpi(svc: any, courseId: string): Promise<Cour
   const empty: CourseKpi = {
     learners, early: { dist: [], thresholdRate: 0 }, weekDays: [], retentionLast7: 0,
     slaRate: null, avgReturnHours: null, avgReviewMinutes: null, caseClearRate: null, timedInTimeRate: null,
-    peerReviews: 0, gradedUsers: 0, certifiedUsers: 0, cohortMembers: 0, demoEntries: 0,
+    peerReviews: 0, gradedUsers: 0, certifiedUsers: 0, cohortMembers: 0, demoEntries: 0, avgAiRewriteRate: null,
   }
   if (!learners) return empty
 
@@ -87,14 +88,15 @@ export async function computeCourseKpi(svc: any, courseId: string): Promise<Cour
 
   // SLA / 返却時間 / 作業時間
   const { data: fbs } = await svc.from('review_feedback')
-    .select('published_at, review_duration_seconds, submission:review_submissions(submitted_at, sla_due_at, course_id)').eq('status', 'published')
-  let slaMet = 0, slaTotal = 0, retSum = 0, retN = 0, durSum = 0, durN = 0
+    .select('published_at, review_duration_seconds, ai_rewrite_rate, submission:review_submissions(submitted_at, sla_due_at, course_id)').eq('status', 'published')
+  let slaMet = 0, slaTotal = 0, retSum = 0, retN = 0, durSum = 0, durN = 0, rwSum = 0, rwN = 0
   for (const f of fbs || []) {
     const sub = f.submission as unknown as { submitted_at: string | null; sla_due_at: string | null; course_id: string } | null
     if (!sub || sub.course_id !== courseId || !f.published_at) continue
     if (sub.sla_due_at) { slaTotal += 1; if (new Date(f.published_at).getTime() <= new Date(sub.sla_due_at).getTime()) slaMet += 1 }
     if (sub.submitted_at) { retSum += (new Date(f.published_at).getTime() - new Date(sub.submitted_at).getTime()); retN += 1 }
     if (f.review_duration_seconds != null) { durSum += f.review_duration_seconds; durN += 1 }
+    if (f.ai_rewrite_rate != null) { rwSum += f.ai_rewrite_rate; rwN += 1 }
   }
 
   // ピアレビュー（このコースの提出に対して）
@@ -136,5 +138,6 @@ export async function computeCourseKpi(svc: any, courseId: string): Promise<Cour
     caseClearRate: caseSubmitters.size ? Math.round((caseCleared.size / caseSubmitters.size) * 100) : null,
     timedInTimeRate: timedTotal ? Math.round((timedInTime / timedTotal) * 100) : null,
     peerReviews, gradedUsers, certifiedUsers, cohortMembers, demoEntries,
+    avgAiRewriteRate: rwN ? Math.round((rwSum / rwN) * 100) : null,
   }
 }

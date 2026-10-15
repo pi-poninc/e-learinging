@@ -13,15 +13,19 @@ interface Props {
   initial?: { good: string; improvements: string; next: string }
   published?: boolean
   rubricItems?: RubricItem[]
+  aiDraftEnabled?: boolean
+  isExemplar?: boolean
 }
 
-export function ReviewEditor({ submissionId, claimedByMe, claimedByOther, initial, published, rubricItems = [] }: Props) {
+export function ReviewEditor({ submissionId, claimedByMe, claimedByOther, initial, published, rubricItems = [], aiDraftEnabled, isExemplar }: Props) {
   const [good, setGood] = useState(initial?.good || '')
   const [improvements, setImprovements] = useState(initial?.improvements || '')
   const [next, setNext] = useState(initial?.next || '')
   const [scores, setScores] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [exemplar, setExemplar] = useState(!!isExemplar)
 
   const call = async (path: string, body: object) => {
     setError(null)
@@ -47,7 +51,18 @@ export function ReviewEditor({ submissionId, claimedByMe, claimedByOther, initia
   }
 
   if (published) {
-    return <p className="text-sm text-green-700">この添削は公開済みです。</p>
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-green-700">この添削は公開済みです。</p>
+        <label className="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+          <input type="checkbox" checked={exemplar} onChange={async (e) => {
+            const v = e.target.checked; setExemplar(v)
+            await fetch('/api/review/ai-draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'mark_exemplar', submissionId, value: v }) })
+          }} />
+          良い添削の例として登録（AI下書きの参考に使う）
+        </label>
+      </div>
+    )
   }
 
   if (claimedByOther) {
@@ -72,6 +87,27 @@ export function ReviewEditor({ submissionId, claimedByMe, claimedByOther, initia
   // claimedByMe
   return (
     <div className="space-y-4">
+      {aiDraftEnabled && (
+        <div className="rounded-md border border-indigo-200 bg-indigo-50 p-3">
+          <Button size="sm" variant="secondary" loading={aiLoading} onClick={async () => {
+            setError(null); setAiLoading(true)
+            try {
+              const res = await fetch('/api/review/ai-draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ submissionId }) })
+              const data = await res.json()
+              if (!res.ok) { setError(data.error || 'AI下書きの生成に失敗しました'); return }
+              const d = data.draft || {}
+              if (d.good_points) setGood(d.good_points)
+              if (d.improvements) setImprovements(d.improvements)
+              if (d.next_action) setNext(d.next_action)
+              if (d.rubric_scores) {
+                const known = new Set(rubricItems.map((r) => r.id))
+                setScores(Object.fromEntries(Object.entries(d.rubric_scores as Record<string, number>).filter(([k]) => known.has(k))))
+              }
+            } finally { setAiLoading(false) }
+          }}>✨ AI下書きを生成</Button>
+          <p className="text-xs text-gray-500 mt-1">下書きはそのまま公開せず、必ず確認・編集してください。AIの文面は受講者には表示されません。</p>
+        </div>
+      )}
       {rubricItems.length > 0 && (
         <div className="space-y-2 rounded-md border border-gray-200 p-3">
           <p className="text-sm font-semibold text-gray-700">ルーブリック評価（スキルに反映されます）</p>

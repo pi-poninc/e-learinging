@@ -72,6 +72,7 @@ export default async function KpiPage({ searchParams }: Props) {
         <Stat label="グレード取得者" value={k.gradedUsers} />
         <Stat label="認定取得者" value={k.certifiedUsers} />
         <Stat label="デモデイ発表" value={k.demoEntries} />
+        <Stat label="AI下書き 書き換え率" value={k.avgAiRewriteRate} suffix="%" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
