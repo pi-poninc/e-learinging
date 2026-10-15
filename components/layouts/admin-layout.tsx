@@ -51,6 +51,7 @@ const extraNav = [
   ...(cohortNavOn ? [{ href: '/admin/cohorts', label: 'コホート' }] : []),
   ...(certNavOn ? [{ href: '/admin/certifications', label: '認定' }] : []),
   ...(orgNavOn ? [{ href: '/admin/organizations', label: '企業管理' }] : []),
+  ...((certNavOn || orgNavOn) ? [{ href: '/admin/records', label: '受講記録出力' }] : []),
 ]
 const visibleNavItems = extraNav.length
   ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]

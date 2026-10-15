@@ -29,7 +29,10 @@ export default async function OrgDashboardPage() {
     <StudentLayout isAdmin={isAdmin(profile.role)}>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">{org?.name || '企業'} ダッシュボード</h1>
-        <p className="text-sm text-gray-500 mb-6">自社の受講者の状況です。提出物の中身やAIコーチの会話は、契約設定で許可されない限り表示されません。</p>
+        <p className="text-sm text-gray-500 mb-3">自社の受講者の状況です。提出物の中身やAIコーチの会話は、契約設定で許可されない限り表示されません。</p>
+        <div className="mb-6">
+          <a href="/api/records/export?scope=org" className="inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">受講記録CSVをダウンロード</a>
+        </div>
 
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card><CardBody className="text-center"><div className="text-2xl font-bold text-gray-900">{ov.learnerCount}</div><div className="text-xs text-gray-500">受講者</div></CardBody></Card>
