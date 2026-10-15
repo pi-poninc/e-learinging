@@ -44,7 +44,7 @@ const orgNavOn =
   process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === '1'
 
 const extraNav = [
-  ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }] : []),
+  ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }, { href: '/admin/kpi', label: 'KPI' }] : []),
   ...(skillNavOn ? [{ href: '/admin/grades', label: 'グレード承認' }, { href: '/admin/case-materials', label: 'ケース教材' }] : []),
   ...(peerNavOn ? [{ href: '/admin/reviewer-checks', label: '新任添削の確認' }, { href: '/admin/reviewer-candidates', label: '添削者の認定' }] : []),
   ...(coachNavOn ? [{ href: '/admin/coach-logs', label: 'AIコーチ ログ' }] : []),
