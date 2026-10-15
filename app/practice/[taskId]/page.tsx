@@ -1,7 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/permissions'
-import { submissionReviewEnabled, peerReviewEnabled } from '@/lib/flags'
+import { submissionReviewEnabled, peerReviewEnabled, aiCoachEnabled } from '@/lib/flags'
 import { getReviewSettings } from '@/lib/review/service'
 import { learningDay, nextSubmitAt } from '@/lib/learning-day'
 import { StudentLayout } from '@/components/layouts/student-layout'
@@ -135,6 +135,13 @@ export default async function PracticeTaskPage({ params }: Props) {
           </CardBody></Card>
         ) : (
           <>
+            {aiCoachEnabled() && !isTimed && (
+              <div className="mb-6">
+                <Link href={`/practice/${taskId}/coach`} className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-100">
+                  💬 AIコーチに相談する（答えは出しませんが、考えを一緒に整理します）
+                </Link>
+              </div>
+            )}
             {isTimed && (
               <div className="mb-6">
                 <TimedStart taskId={taskId} startedAt={startedAt} timeLimitMinutes={task.time_limit_minutes} />

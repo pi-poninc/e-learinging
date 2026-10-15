@@ -23,3 +23,8 @@ export function skillMapEnabled(): boolean {
 export function peerReviewEnabled(): boolean {
   return envFlag('FEATURE_PEER_REVIEW')
 }
+
+/** AIコーチ（育成プログラム Phase D）。FEATURE_AI_COACH が真のとき有効。 */
+export function aiCoachEnabled(): boolean {
+  return envFlag('FEATURE_AI_COACH')
+}

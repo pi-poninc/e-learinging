@@ -15,6 +15,8 @@ export interface EffectiveReviewSettings {
   submitEncouragement: string
   peerReviewMinGrade: number
   newReviewerCheckCount: number
+  aiCoachEnabled: boolean
+  aiCoachDailyLimit: number
 }
 
 export function defaultReviewSettings(): EffectiveReviewSettings {
@@ -29,6 +31,8 @@ export function defaultReviewSettings(): EffectiveReviewSettings {
     submitEncouragement: '完璧でなくて大丈夫。今日の分を出すことが一番大事です。',
     peerReviewMinGrade: 3,
     newReviewerCheckCount: 10,
+    aiCoachEnabled: false,
+    aiCoachDailyLimit: 20,
   }
 }
 
@@ -48,6 +52,8 @@ export async function getReviewSettings(supabase: any, courseId: string): Promis
     submitEncouragement: data.submit_encouragement,
     peerReviewMinGrade: data.peer_review_min_grade ?? 3,
     newReviewerCheckCount: data.new_reviewer_check_count ?? 10,
+    aiCoachEnabled: data.ai_coach_enabled ?? false,
+    aiCoachDailyLimit: data.ai_coach_daily_limit ?? 20,
   }
 }
 
