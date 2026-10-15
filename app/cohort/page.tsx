@@ -47,7 +47,10 @@ export default async function CohortPage() {
           <Card><CardBody className="text-center"><div className="text-2xl font-bold text-emerald-600">{ov.weekSubmissionTotal}</div><div className="text-xs text-gray-500">今週の提出合計</div></CardBody></Card>
         </div>
 
-        <div className="mb-6"><CohortShareToggle cohortId={cohort.id} initial={active.share_activity} /></div>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <CohortShareToggle cohortId={cohort.id} initial={active.share_activity} />
+          <a href="/cohort/demo" className="text-sm text-indigo-600 hover:text-indigo-700">🎤 デモデイへ →</a>
+        </div>
 
         <h2 className="text-lg font-semibold text-gray-800 mb-2">仲間のうごき</h2>
         {ov.timeline.length === 0 && (

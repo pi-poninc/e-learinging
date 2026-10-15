@@ -5,6 +5,7 @@ import { AdminLayout } from '@/components/layouts/admin-layout'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ActionButton } from '@/components/review/action-button'
+import { GuestTokenButton } from '@/components/review/guest-token-button'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -33,7 +34,11 @@ export default async function AdminCohortDetailPage({ params }: Props) {
     <AdminLayout>
       <div className="mb-4"><Link href="/admin/cohorts" className="text-sm text-blue-600 hover:text-blue-700">&larr; 期の一覧</Link></div>
       <h1 className="text-xl font-bold text-gray-900 mb-1">{cohort.name}</h1>
-      <p className="text-sm text-gray-500 mb-6">{course?.title}</p>
+      <p className="text-sm text-gray-500 mb-4">{course?.title}</p>
+
+      <Card className="mb-6"><CardHeader><h2 className="text-lg font-semibold">デモデイ</h2></CardHeader>
+        <CardBody><GuestTokenButton cohortId={id} /></CardBody>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
