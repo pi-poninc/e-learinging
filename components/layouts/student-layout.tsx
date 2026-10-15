@@ -17,6 +17,9 @@ const practiceNavOn =
 const skillNavOn =
   process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === '1'
+const peerNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_PEER_REVIEW === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_PEER_REVIEW === '1'
 
 export function StudentLayout({ children, isAdmin = false, showTeam = false }: StudentLayoutProps) {
   const router = useRouter()
@@ -79,6 +82,14 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   成長（スキル）
+                </Link>
+              )}
+              {peerNavOn && (
+                <Link
+                  href="/practice/peer"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  ピアレビュー
                 </Link>
               )}
               <Link
