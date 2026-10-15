@@ -30,7 +30,7 @@ const skillNavOn =
 
 const extraNav = [
   ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }] : []),
-  ...(skillNavOn ? [{ href: '/admin/grades', label: 'グレード承認' }] : []),
+  ...(skillNavOn ? [{ href: '/admin/grades', label: 'グレード承認' }, { href: '/admin/case-materials', label: 'ケース教材' }] : []),
 ]
 const visibleNavItems = extraNav.length
   ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]

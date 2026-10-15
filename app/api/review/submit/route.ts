@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   const { data: task } = await supabase
     .from('review_tasks')
-    .select('id, course_id, is_active')
+    .select('id, course_id, is_active, assignment_type, time_limit_minutes, prerequisite_grade_id')
     .eq('id', taskId)
     .maybeSingle()
   if (!task || !task.is_active) return NextResponse.json({ error: '課題が見つかりません' }, { status: 404 })
@@ -32,6 +32,34 @@ export async function POST(request: NextRequest) {
     .eq('status', 'active')
     .maybeSingle()
   if (!enrollment) return NextResponse.json({ error: 'この講座を受講していません' }, { status: 403 })
+
+  // 前提グレードの判定（満たしていないと受けられない）
+  if (task.prerequisite_grade_id) {
+    const { data: preq } = await supabase.from('grades').select('level, course_id').eq('id', task.prerequisite_grade_id).maybeSingle()
+    if (preq) {
+      const { data: approvedUg } = await supabase.from('user_grades').select('grade_id').eq('user_id', user.id).eq('status', 'approved')
+      const ids = (approvedUg || []).map((g) => g.grade_id)
+      let maxApproved = 0
+      if (ids.length) {
+        const { data: gr } = await supabase.from('grades').select('level').in('id', ids).eq('course_id', preq.course_id)
+        maxApproved = Math.max(0, ...(gr || []).map((g) => g.level))
+      }
+      if (maxApproved < preq.level) {
+        return NextResponse.json({ error: '前提グレードを満たしていません' }, { status: 403 })
+      }
+    }
+  }
+
+  // 時間制限課題：開始必須。制限超過は記録する
+  let autoCheck: Record<string, unknown> = {}
+  if (task.assignment_type === 'timed_challenge') {
+    const { data: start } = await supabase.from('review_task_starts').select('started_at').eq('task_id', taskId).eq('user_id', user.id).maybeSingle()
+    if (!start) return NextResponse.json({ error: 'まず「開始」を押してください' }, { status: 400 })
+    if (task.time_limit_minutes) {
+      const due = new Date(start.started_at).getTime() + task.time_limit_minutes * 60000
+      if (Date.now() > due) autoCheck = { overtime: true }
+    }
+  }
 
   const settings = await getReviewSettings(supabase, task.course_id)
   const now = new Date()
@@ -58,6 +86,7 @@ export async function POST(request: NextRequest) {
       submitted_at: now.toISOString(),
       sla_due_at: slaDueAt(now, settings.slaHours).toISOString(),
       submission_number: submissionNumber,
+      auto_check_result: autoCheck,
     })
     .select()
     .single()
