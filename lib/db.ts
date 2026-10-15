@@ -293,3 +293,104 @@ export interface CourseItem {
   completed: boolean
   locked: boolean
 }
+
+// ===== 提出 × 添削 機能（Phase 1）=====
+export interface ReviewSettings {
+  course_id: string
+  daily_submission_limit: number
+  sla_hours: number
+  weekly_goal_days: number
+  day_boundary_hour: number
+  timezone: string
+  week_start: 'sunday' | 'monday'
+  early_threshold_submissions: number
+  early_window_days: number
+  ai_draft_enabled: boolean
+  reviewer_display_mode: 'real_name' | 'nickname' | 'anonymous'
+  submit_encouragement: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ReviewerProfile {
+  user_id: string
+  display_name: string
+  avatar_url: string | null
+  course_ids: string[]
+  max_concurrent_claims: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ReviewTaskStep {
+  title: string
+  description?: string
+  video_url?: string
+}
+
+export type ReviewSubmissionType = 'text' | 'url' | 'file' | 'audio' | 'video' | 'code_repo'
+
+export interface ReviewTask {
+  id: string
+  course_id: string
+  lesson_id: string | null
+  title: string
+  instructions: string | null
+  steps: ReviewTaskStep[]
+  submission_types: ReviewSubmissionType[]
+  pre_submit_checklist: string[]
+  estimated_minutes: number | null
+  order_index: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ReviewSubmissionStatus =
+  | 'draft' | 'submitted' | 'in_review' | 'reviewed' | 'returned_for_resubmission'
+
+export interface ReviewAttachment {
+  path: string
+  name: string
+  size: number
+  mime: string
+}
+
+export interface ReviewSubmission {
+  id: string
+  task_id: string
+  course_id: string
+  user_id: string
+  status: ReviewSubmissionStatus
+  content_text: string | null
+  content_url: string | null
+  attachments: ReviewAttachment[]
+  learning_day: string | null
+  submitted_at: string | null
+  sla_due_at: string | null
+  submission_number: number | null
+  auto_check_result: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export type ReviewFeedbackStatus = 'claimed' | 'drafting' | 'published'
+
+export interface ReviewFeedback {
+  id: string
+  submission_id: string
+  reviewer_id: string
+  status: ReviewFeedbackStatus
+  good_points: string | null
+  improvements: string | null
+  next_action: string | null
+  inline_comments: unknown[]
+  rubric_scores: Record<string, unknown>
+  ai_draft: Record<string, unknown> | null
+  claimed_at: string
+  published_at: string | null
+  review_duration_seconds: number | null
+  created_at: string
+  updated_at: string
+}
