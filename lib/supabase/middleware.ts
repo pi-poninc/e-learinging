@@ -35,8 +35,8 @@ export async function updateSession(request: NextRequest) {
 
   // Public routes that don't require auth
   const publicRoutes = ['/', '/login', '/signup']
-  // /demo/<token> はゲスト評価者用のログイン不要ページ
-  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/demo/')
+  // /demo/<token>（ゲスト評価）・/verify/<番号>（認定の確認）はログイン不要
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/demo/') || pathname.startsWith('/verify/')
 
   // Auth error or no user → treat as unauthenticated
   const isAuthenticated = !error && !!user

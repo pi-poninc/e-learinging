@@ -33,3 +33,8 @@ export function aiCoachEnabled(): boolean {
 export function cohortEnabled(): boolean {
   return envFlag('FEATURE_COHORT')
 }
+
+/** 認定・企業管理（育成プログラム Phase F）。FEATURE_CERTIFICATION が真のとき有効。 */
+export function certificationEnabled(): boolean {
+  return envFlag('FEATURE_CERTIFICATION')
+}

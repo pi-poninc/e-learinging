@@ -36,6 +36,9 @@ const coachNavOn =
 const cohortNavOn =
   process.env.NEXT_PUBLIC_FEATURE_COHORT === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_COHORT === '1'
+const certNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_CERTIFICATION === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_CERTIFICATION === '1'
 
 const extraNav = [
   ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }] : []),
@@ -43,6 +46,7 @@ const extraNav = [
   ...(peerNavOn ? [{ href: '/admin/reviewer-checks', label: '新任添削の確認' }, { href: '/admin/reviewer-candidates', label: '添削者の認定' }] : []),
   ...(coachNavOn ? [{ href: '/admin/coach-logs', label: 'AIコーチ ログ' }] : []),
   ...(cohortNavOn ? [{ href: '/admin/cohorts', label: 'コホート' }] : []),
+  ...(certNavOn ? [{ href: '/admin/certifications', label: '認定' }] : []),
 ]
 const visibleNavItems = extraNav.length
   ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]
