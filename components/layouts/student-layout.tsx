@@ -11,6 +11,10 @@ interface StudentLayoutProps {
   showTeam?: boolean
 }
 
+const practiceNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === '1'
+
 export function StudentLayout({ children, isAdmin = false, showTeam = false }: StudentLayoutProps) {
   const router = useRouter()
 
@@ -58,6 +62,14 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
               >
                 FDEロードマップ
               </Link>
+              {practiceNavOn && (
+                <Link
+                  href="/practice"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  練習（提出）
+                </Link>
+              )}
               <Link
                 href="/submit"
                 className="text-sm text-gray-600 hover:text-gray-900"

@@ -21,6 +21,14 @@ const navItems = [
   { href: '/admin/help', label: '使い方ガイド' },
 ]
 
+const reviewNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === '1'
+
+const visibleNavItems = reviewNavOn
+  ? [...navItems.slice(0, 10), { href: '/admin/review-queue', label: '添削キュー' }, ...navItems.slice(10)]
+  : navItems
+
 export function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -41,7 +49,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
         <nav className="flex-1 px-4 py-4 space-y-1">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
             return (
               <Link
