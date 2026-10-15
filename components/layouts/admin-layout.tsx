@@ -39,6 +39,9 @@ const cohortNavOn =
 const certNavOn =
   process.env.NEXT_PUBLIC_FEATURE_CERTIFICATION === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_CERTIFICATION === '1'
+const orgNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === '1'
 
 const extraNav = [
   ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }] : []),
@@ -47,6 +50,7 @@ const extraNav = [
   ...(coachNavOn ? [{ href: '/admin/coach-logs', label: 'AIコーチ ログ' }] : []),
   ...(cohortNavOn ? [{ href: '/admin/cohorts', label: 'コホート' }] : []),
   ...(certNavOn ? [{ href: '/admin/certifications', label: '認定' }] : []),
+  ...(orgNavOn ? [{ href: '/admin/organizations', label: '企業管理' }] : []),
 ]
 const visibleNavItems = extraNav.length
   ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]

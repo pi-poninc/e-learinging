@@ -38,3 +38,8 @@ export function cohortEnabled(): boolean {
 export function certificationEnabled(): boolean {
   return envFlag('FEATURE_CERTIFICATION')
 }
+
+/** 企業（組織）管理（育成プログラム Phase F-2）。FEATURE_ORG_ADMIN が真のとき有効。 */
+export function orgAdminEnabled(): boolean {
+  return envFlag('FEATURE_ORG_ADMIN')
+}

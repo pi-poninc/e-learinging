@@ -26,6 +26,9 @@ const cohortNavOn =
 const certNavOn =
   process.env.NEXT_PUBLIC_FEATURE_CERTIFICATION === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_CERTIFICATION === '1'
+const orgNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === '1'
 
 export function StudentLayout({ children, isAdmin = false, showTeam = false }: StudentLayoutProps) {
   const router = useRouter()
@@ -112,6 +115,14 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   認定
+                </Link>
+              )}
+              {orgNavOn && (
+                <Link
+                  href="/org"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  組織
                 </Link>
               )}
               <Link
