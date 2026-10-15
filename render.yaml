@@ -1,0 +1,78 @@
+# Render Blueprint（インフラをコードで定義）。
+# ダッシュボードの Blueprints から取り込むと、Webサービスと日次Cronをまとめて作成できる。
+# 機密値（sync:false）は Render 上で手入力する。既存サービスがある場合は env だけ参考にしてもよい。
+services:
+  # 本体（Next.js）
+  - type: web
+    name: pipon-learning
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: VIMEO_ACCESS_TOKEN
+        sync: false
+      # メール（任意・リマインド送信に必要）
+      - key: RESEND_API_KEY
+        sync: false
+      - key: REMINDER_FROM
+        sync: false
+      # Cron 認証トークン（web と cron で同じ値にする）
+      - key: CRON_SECRET
+        generateValue: true
+      # 育成プログラム機能フラグ（有効化したいものだけ true）
+      - key: FEATURE_SUBMISSION_REVIEW
+        value: "false"
+      - key: FEATURE_SKILL_MAP
+        value: "false"
+      - key: FEATURE_PEER_REVIEW
+        value: "false"
+      - key: FEATURE_AI_COACH
+        value: "false"
+      - key: FEATURE_COHORT
+        value: "false"
+      - key: FEATURE_CERTIFICATION
+        value: "false"
+      - key: FEATURE_ORG_ADMIN
+        value: "false"
+      # AIコーチ/下書き用（FEATURE_AI_COACH を使う場合）
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # 決済（任意・FEATURE_BILLING を使う場合）
+      - key: FEATURE_BILLING
+        value: "false"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+  # 日次リマインド（受講期限が近い/過ぎた受講者へメール）
+  - type: cron
+    name: pipon-learning-reminders
+    runtime: node
+    plan: starter
+    region: singapore
+    # 毎日 JST 9:00 = UTC 0:00
+    schedule: "0 0 * * *"
+    buildCommand: "echo no build"
+    startCommand: >
+      curl -fsS -X POST
+      -H "Authorization: Bearer $CRON_SECRET"
+      "$NEXT_PUBLIC_APP_URL/api/cron/reminders"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
