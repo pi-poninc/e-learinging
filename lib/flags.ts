@@ -18,3 +18,8 @@ export function submissionReviewEnabled(): boolean {
 export function skillMapEnabled(): boolean {
   return envFlag('FEATURE_SKILL_MAP')
 }
+
+/** ピアレビュー＆添削者育成（育成プログラム Phase C）。FEATURE_PEER_REVIEW が真のとき有効。 */
+export function peerReviewEnabled(): boolean {
+  return envFlag('FEATURE_PEER_REVIEW')
+}

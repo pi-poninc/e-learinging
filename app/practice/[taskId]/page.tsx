@@ -1,7 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { isAdmin } from '@/lib/permissions'
-import { submissionReviewEnabled } from '@/lib/flags'
+import { submissionReviewEnabled, peerReviewEnabled } from '@/lib/flags'
 import { getReviewSettings } from '@/lib/review/service'
 import { learningDay, nextSubmitAt } from '@/lib/learning-day'
 import { StudentLayout } from '@/components/layouts/student-layout'
@@ -9,6 +9,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ReviewSubmitForm } from '@/components/review/submit-form'
 import { TimedStart } from '@/components/review/timed-start'
+import { ActionButton } from '@/components/review/action-button'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
@@ -102,6 +103,14 @@ export default async function PracticeTaskPage({ params }: Props) {
     }
   }
 
+  // 仲間からのコメント（ピアレビュー）
+  let peerReviews: { id: string; good_points: string | null; comment: string | null; reviewee_reaction: boolean }[] = []
+  if (peerReviewEnabled() && latest) {
+    const { data: prs } = await supabase
+      .from('peer_reviews').select('id, good_points, comment, reviewee_reaction').eq('submission_id', latest.id)
+    peerReviews = prs || []
+  }
+
   const statusLabel: Record<string, string> = {
     submitted: '提出済み（添削待ち）', in_review: '添削中', reviewed: '添削返却済み',
     returned_for_resubmission: '再提出のお願い', draft: '下書き',
@@ -160,6 +169,27 @@ export default async function PracticeTaskPage({ params }: Props) {
                     <div><p className="font-semibold text-green-700">良かった点</p><p className="whitespace-pre-wrap text-gray-700">{feedback.good_points}</p></div>
                     {feedback.improvements && <div><p className="font-semibold text-amber-700">改善点</p><p className="whitespace-pre-wrap text-gray-700">{feedback.improvements}</p></div>}
                     <div><p className="font-semibold text-blue-700">次にやること</p><p className="whitespace-pre-wrap text-gray-700">{feedback.next_action}</p></div>
+                  </div>
+                </CardBody>
+              </Card>
+            )}
+
+            {peerReviews.length > 0 && (
+              <Card className="mb-6">
+                <CardHeader><h2 className="text-lg font-semibold">仲間からのコメント</h2></CardHeader>
+                <CardBody>
+                  <div className="space-y-4">
+                    {peerReviews.map((p) => (
+                      <div key={p.id} className="rounded bg-gray-50 p-3 text-sm">
+                        {p.good_points && <p className="text-gray-700"><span className="font-semibold text-green-700">良かった点：</span>{p.good_points}</p>}
+                        {p.comment && <p className="text-gray-700 mt-1 whitespace-pre-wrap">{p.comment}</p>}
+                        <div className="mt-2">
+                          {p.reviewee_reaction
+                            ? <span className="text-xs text-emerald-600">👍 参考になった、を送りました</span>
+                            : <ActionButton endpoint="/api/review/peer" body={{ action: 'react', peerReviewId: p.id }} label="👍 参考になった" variant="ghost" />}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardBody>
               </Card>

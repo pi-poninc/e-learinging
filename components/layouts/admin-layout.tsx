@@ -27,10 +27,14 @@ const reviewNavOn =
 const skillNavOn =
   process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === '1'
+const peerNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_PEER_REVIEW === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_PEER_REVIEW === '1'
 
 const extraNav = [
   ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }] : []),
   ...(skillNavOn ? [{ href: '/admin/grades', label: 'グレード承認' }, { href: '/admin/case-materials', label: 'ケース教材' }] : []),
+  ...(peerNavOn ? [{ href: '/admin/reviewer-checks', label: '新任添削の確認' }, { href: '/admin/reviewer-candidates', label: '添削者の認定' }] : []),
 ]
 const visibleNavItems = extraNav.length
   ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]

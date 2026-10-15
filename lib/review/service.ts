@@ -13,6 +13,8 @@ export interface EffectiveReviewSettings {
   weekStart: 'monday' | 'sunday'
   reviewerDisplayMode: 'real_name' | 'nickname' | 'anonymous'
   submitEncouragement: string
+  peerReviewMinGrade: number
+  newReviewerCheckCount: number
 }
 
 export function defaultReviewSettings(): EffectiveReviewSettings {
@@ -25,6 +27,8 @@ export function defaultReviewSettings(): EffectiveReviewSettings {
     weekStart: 'monday',
     reviewerDisplayMode: 'nickname',
     submitEncouragement: '完璧でなくて大丈夫。今日の分を出すことが一番大事です。',
+    peerReviewMinGrade: 3,
+    newReviewerCheckCount: 10,
   }
 }
 
@@ -42,6 +46,8 @@ export async function getReviewSettings(supabase: any, courseId: string): Promis
     weekStart: data.week_start,
     reviewerDisplayMode: data.reviewer_display_mode,
     submitEncouragement: data.submit_encouragement,
+    peerReviewMinGrade: data.peer_review_min_grade ?? 3,
+    newReviewerCheckCount: data.new_reviewer_check_count ?? 10,
   }
 }
 
