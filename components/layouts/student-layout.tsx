@@ -14,6 +14,9 @@ interface StudentLayoutProps {
 const practiceNavOn =
   process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === '1'
+const skillNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === '1'
 
 export function StudentLayout({ children, isAdmin = false, showTeam = false }: StudentLayoutProps) {
   const router = useRouter()
@@ -68,6 +71,14 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   練習（提出）
+                </Link>
+              )}
+              {skillNavOn && (
+                <Link
+                  href="/skills"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  成長（スキル）
                 </Link>
               )}
               <Link

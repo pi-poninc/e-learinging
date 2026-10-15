@@ -24,9 +24,16 @@ const navItems = [
 const reviewNavOn =
   process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_SUBMISSION_REVIEW === '1'
+const skillNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_SKILL_MAP === '1'
 
-const visibleNavItems = reviewNavOn
-  ? [...navItems.slice(0, 10), { href: '/admin/review-queue', label: '添削キュー' }, ...navItems.slice(10)]
+const extraNav = [
+  ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }] : []),
+  ...(skillNavOn ? [{ href: '/admin/grades', label: 'グレード承認' }] : []),
+]
+const visibleNavItems = extraNav.length
+  ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]
   : navItems
 
 export function AdminLayout({ children }: { children: ReactNode }) {

@@ -18,12 +18,23 @@ export default async function ReviewEditorPage({ params }: Props) {
 
   const { data: sub } = await supabase
     .from('review_submissions')
-    .select('*, task:review_tasks(title, instructions), user:profiles(name)')
+    .select('*, task:review_tasks(title, instructions, rubric_id), user:profiles(name)')
     .eq('id', submissionId)
     .maybeSingle()
   if (!sub) notFound()
-  const task = sub.task as unknown as { title: string; instructions: string | null } | null
+  const task = sub.task as unknown as { title: string; instructions: string | null; rubric_id: string | null } | null
   const u = sub.user as unknown as { name: string | null } | null
+
+  // ルーブリック項目（スキルマップ機能が有効なとき）
+  let rubricItems: { id: string; label: string; max_level: number }[] = []
+  if (task?.rubric_id) {
+    const { data: items } = await supabase
+      .from('rubric_items')
+      .select('id, label, max_level, order_index')
+      .eq('rubric_id', task.rubric_id)
+      .order('order_index')
+    rubricItems = (items || []).map((i) => ({ id: i.id, label: i.label, max_level: i.max_level }))
+  }
 
   const { data: fb } = await supabase
     .from('review_feedback')
@@ -100,6 +111,7 @@ export default async function ReviewEditorPage({ params }: Props) {
                 claimedByMe={claimedByMe}
                 claimedByOther={claimedByOther}
                 published={published}
+                rubricItems={rubricItems}
                 initial={fb ? { good: fb.good_points || '', improvements: fb.improvements || '', next: fb.next_action || '' } : undefined}
               />
             </CardBody>

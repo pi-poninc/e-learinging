@@ -1,8 +1,9 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { submissionReviewEnabled } from '@/lib/flags'
+import { submissionReviewEnabled, skillMapEnabled } from '@/lib/flags'
 import { STAFF_ROLES } from '@/lib/review/service'
 import { sendEmail } from '@/lib/mail'
+import { applyReviewSkillAssessments } from '@/lib/review/recompute'
 
 export async function POST(request: NextRequest) {
   if (!submissionReviewEnabled()) return NextResponse.json({ error: '機能が無効です' }, { status: 404 })
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const { submissionId, goodPoints, improvements, nextAction } = await request.json()
+  const { submissionId, goodPoints, improvements, nextAction, rubricScores } = await request.json()
   if (!submissionId) return NextResponse.json({ error: 'submissionId が必要です' }, { status: 400 })
   if (!goodPoints || !nextAction) {
     return NextResponse.json({ error: '「良かった点」と「次にやること」は必須です' }, { status: 400 })
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
       good_points: goodPoints,
       improvements: improvements || null,
       next_action: nextAction,
+      rubric_scores: rubricScores && typeof rubricScores === 'object' ? rubricScores : {},
       published_at: now.toISOString(),
       review_duration_seconds: dur,
     })
@@ -45,6 +47,19 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   await supabase.from('review_submissions').update({ status: 'reviewed' }).eq('id', submissionId)
+
+  // スキルマップが有効なら、ルーブリック評価をスキル評価へ反映（公開自体は止めない）
+  if (skillMapEnabled()) {
+    try {
+      await applyReviewSkillAssessments(supabase, {
+        submissionId,
+        reviewerId: user.id,
+        rubricScores: rubricScores && typeof rubricScores === 'object' ? rubricScores : undefined,
+      })
+    } catch {
+      // 反映失敗は公開を失敗させない
+    }
+  }
 
   // 受講者へメール通知（送信基盤が無い環境では送らずに成功を返す）
   try {

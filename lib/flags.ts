@@ -13,3 +13,8 @@ function envFlag(name: string): boolean {
 export function submissionReviewEnabled(): boolean {
   return envFlag('FEATURE_SUBMISSION_REVIEW')
 }
+
+/** スキルマップ＆グレード（育成プログラム Phase A）。FEATURE_SKILL_MAP が真のとき有効。 */
+export function skillMapEnabled(): boolean {
+  return envFlag('FEATURE_SKILL_MAP')
+}

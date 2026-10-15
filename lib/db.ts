@@ -394,3 +394,23 @@ export interface ReviewFeedback {
   created_at: string
   updated_at: string
 }
+
+// ===== 育成プログラム Phase A（スキルマップ＆グレード）=====
+export interface SkillMap { id: string; course_id: string; name: string; version: number; is_active: boolean; created_at: string }
+export interface Skill { id: string; skill_map_id: string; category: string; name: string; description: string | null; order_index: number }
+export interface SkillLevelDef { id: string; skill_id: string; level: number; behavior_description: string | null }
+export interface Rubric { id: string; course_id: string; name: string; is_active: boolean; created_at: string }
+export interface RubricItem { id: string; rubric_id: string; label: string; skill_id: string | null; weight: number; max_level: number; order_index: number }
+export interface SkillAssessment {
+  id: string; user_id: string; skill_id: string
+  source_type: 'review' | 'peer_review' | 'case_assignment' | 'demo_day' | 'manual'
+  source_id: string | null; level_observed: number; assessed_by: string | null; assessed_at: string
+}
+export interface UserSkillLevel { user_id: string; skill_id: string; current_level: number; confidence: 'low' | 'medium' | 'high'; updated_at: string }
+export interface Grade { id: string; course_id: string; level: number; name: string; requirements: Record<string, number>; order_index: number }
+export interface UserGrade {
+  id: string; user_id: string; grade_id: string
+  status: 'eligible' | 'approved' | 'rejected'
+  evidence: Record<string, unknown>; approved_by: string | null; approved_at: string | null; created_at: string
+}
+export interface LearningEvent { id: string; user_id: string; course_id: string | null; event_name: string; properties: Record<string, unknown>; occurred_at: string }
