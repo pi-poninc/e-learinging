@@ -16,6 +16,7 @@ export interface Course {
   thumbnail_url: string | null
   status: 'draft' | 'published' | 'archived'
   is_sequential: boolean
+  price_jpy: number | null
   created_by: string | null
   created_at: string
   updated_at: string

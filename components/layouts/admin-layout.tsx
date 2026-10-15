@@ -42,6 +42,9 @@ const certNavOn =
 const orgNavOn =
   process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === '1'
+const billingNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_BILLING === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_BILLING === '1'
 
 const extraNav = [
   ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }, { href: '/admin/kpi', label: 'KPI' }] : []),
@@ -52,6 +55,7 @@ const extraNav = [
   ...(certNavOn ? [{ href: '/admin/certifications', label: '認定' }] : []),
   ...(orgNavOn ? [{ href: '/admin/organizations', label: '企業管理' }] : []),
   ...((certNavOn || orgNavOn) ? [{ href: '/admin/records', label: '受講記録出力' }] : []),
+  ...(billingNavOn ? [{ href: '/admin/billing', label: '売上・購入履歴' }] : []),
 ]
 const visibleNavItems = extraNav.length
   ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]

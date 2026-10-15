@@ -80,12 +80,15 @@ export default function EditCoursePage() {
     setError('')
     const fd = new FormData(e.currentTarget)
 
+    const priceRaw = (fd.get('price_jpy') as string)?.trim()
+    const priceVal = priceRaw ? Math.max(0, Math.round(Number(priceRaw))) : null
     const { error: updateError } = await supabase.from('courses').update({
       title: fd.get('title') as string,
       description: fd.get('description') as string,
       thumbnail_url: (fd.get('thumbnail_url') as string) || null,
       status: fd.get('status') as string,
       is_sequential: fd.get('is_sequential') === 'true',
+      price_jpy: priceVal && priceVal > 0 ? priceVal : null,
     }).eq('id', courseId)
 
     if (updateError) setError(updateError.message)
@@ -188,6 +191,17 @@ export default function EditCoursePage() {
               { value: 'false', label: '自由（どのレッスンでも受講可）' },
               { value: 'true', label: '順序モード（前のレッスン/テストを完了しないと次に進めない）' },
             ]} />
+            <Input
+              label="価格（円・税込／空欄か0で無料）"
+              name="price_jpy"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={course.price_jpy ?? ''}
+            />
+            <p className="text-xs text-gray-500 -mt-2">
+              有料にすると「ストア」から購入対象になります（決済機能 FEATURE_BILLING が有効なときのみ）。
+            </p>
             <Button type="submit" loading={saving}>保存</Button>
           </form>
         </CardBody>

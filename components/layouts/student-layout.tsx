@@ -29,6 +29,9 @@ const certNavOn =
 const orgNavOn =
   process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_ORG_ADMIN === '1'
+const storeNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_BILLING === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_BILLING === '1'
 
 export function StudentLayout({ children, isAdmin = false, showTeam = false }: StudentLayoutProps) {
   const router = useRouter()
@@ -123,6 +126,14 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   組織
+                </Link>
+              )}
+              {storeNavOn && (
+                <Link
+                  href="/store"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  ストア
                 </Link>
               )}
               <Link

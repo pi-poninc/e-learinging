@@ -43,3 +43,8 @@ export function certificationEnabled(): boolean {
 export function orgAdminEnabled(): boolean {
   return envFlag('FEATURE_ORG_ADMIN')
 }
+
+/** 決済（Stripe 買い切り）。FEATURE_BILLING が真のとき有効。 */
+export function billingEnabled(): boolean {
+  return envFlag('FEATURE_BILLING')
+}
