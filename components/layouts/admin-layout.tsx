@@ -33,12 +33,16 @@ const peerNavOn =
 const coachNavOn =
   process.env.NEXT_PUBLIC_FEATURE_AI_COACH === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_AI_COACH === '1'
+const cohortNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_COHORT === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_COHORT === '1'
 
 const extraNav = [
   ...(reviewNavOn ? [{ href: '/admin/review-queue', label: '添削キュー' }] : []),
   ...(skillNavOn ? [{ href: '/admin/grades', label: 'グレード承認' }, { href: '/admin/case-materials', label: 'ケース教材' }] : []),
   ...(peerNavOn ? [{ href: '/admin/reviewer-checks', label: '新任添削の確認' }, { href: '/admin/reviewer-candidates', label: '添削者の認定' }] : []),
   ...(coachNavOn ? [{ href: '/admin/coach-logs', label: 'AIコーチ ログ' }] : []),
+  ...(cohortNavOn ? [{ href: '/admin/cohorts', label: 'コホート' }] : []),
 ]
 const visibleNavItems = extraNav.length
   ? [...navItems.slice(0, 10), ...extraNav, ...navItems.slice(10)]

@@ -20,6 +20,9 @@ const skillNavOn =
 const peerNavOn =
   process.env.NEXT_PUBLIC_FEATURE_PEER_REVIEW === 'true' ||
   process.env.NEXT_PUBLIC_FEATURE_PEER_REVIEW === '1'
+const cohortNavOn =
+  process.env.NEXT_PUBLIC_FEATURE_COHORT === 'true' ||
+  process.env.NEXT_PUBLIC_FEATURE_COHORT === '1'
 
 export function StudentLayout({ children, isAdmin = false, showTeam = false }: StudentLayoutProps) {
   const router = useRouter()
@@ -90,6 +93,14 @@ export function StudentLayout({ children, isAdmin = false, showTeam = false }: S
                   className="text-sm text-gray-600 hover:text-gray-900"
                 >
                   ピアレビュー
+                </Link>
+              )}
+              {cohortNavOn && (
+                <Link
+                  href="/cohort"
+                  className="text-sm text-gray-600 hover:text-gray-900"
+                >
+                  仲間
                 </Link>
               )}
               <Link

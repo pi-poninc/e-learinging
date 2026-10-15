@@ -28,3 +28,8 @@ export function peerReviewEnabled(): boolean {
 export function aiCoachEnabled(): boolean {
   return envFlag('FEATURE_AI_COACH')
 }
+
+/** コホート＆デモデイ（育成プログラム Phase E）。FEATURE_COHORT が真のとき有効。 */
+export function cohortEnabled(): boolean {
+  return envFlag('FEATURE_COHORT')
+}
