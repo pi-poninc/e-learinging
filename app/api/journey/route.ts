@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { computeLevel } from '@/lib/fde-level'
+import { skillMapEnabled } from '@/lib/flags'
+import { computeGradeLevel } from '@/lib/review/grade'
 
 export async function GET() {
   const supabase = await createClient()
@@ -20,10 +22,17 @@ export async function GET() {
   const doneCases = new Set((caseRes.data || []).map((r) => r.case_simulation_id))
   const doneAsg = new Set((asgRes.data || []).map((r) => r.assignment_id))
 
+  // 成長軸は1つに統一：スキルマップが有効なコースでは「グレード」、無ければXP（後方互換）
   const levelInfo = computeLevel({
     lessons: doneLessons.size, quizzes: donePassedQuiz.size,
     cases: doneCases.size, assignments: doneAsg.size,
   })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let level: any = { mode: 'xp', ...levelInfo }
+  if (skillMapEnabled()) {
+    const g = await computeGradeLevel(supabase, uid)
+    if (g) level = g
+  }
 
   // ---- パス ----
   const { data: paths } = await supabase
@@ -103,5 +112,5 @@ export async function GET() {
     }
   })
 
-  return NextResponse.json({ level: levelInfo, paths: outPaths })
+  return NextResponse.json({ level, paths: outPaths })
 }

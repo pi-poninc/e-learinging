@@ -10,9 +10,9 @@ export default async function JourneyPage() {
   return (
     <StudentLayout isAdmin={admin}>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">FDE育成ロードマップ</h1>
+        <h1 className="text-2xl font-bold text-gray-900">育成ロードマップ</h1>
         <p className="text-sm text-gray-500 mt-1">
-          コースを順番に進めて、FDEレベルを上げていこう。レッスン・クイズ・案件追体験・課題の完了がXPになります。
+          コースを順番に進めて、グレードを上げていこう。スキルマップが設定されたコースでは、添削で評価されたスキルがグレードになります。
         </p>
       </div>
       <JourneyClient />

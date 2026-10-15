@@ -4,9 +4,14 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 
 interface LevelInfo {
-  xp: number; level: number; title: string
-  intoLevel: number; levelSpan: number; nextLevelXp: number; pctToNext: number
-  breakdown: { lessons: number; quizzes: number; cases: number; assignments: number }
+  mode?: 'grade' | 'xp'
+  level: number; title: string; pctToNext: number
+  // xp mode
+  xp?: number; intoLevel?: number; levelSpan?: number; nextLevelXp?: number
+  breakdown?: { lessons: number; quizzes: number; cases: number; assignments: number }
+  // grade mode
+  nextTitle?: string | null; awaitingApproval?: boolean
+  metSkills?: number; neededSkills?: number; courseTitle?: string
 }
 interface PItem {
   id: string; courseId: string; title: string; milestone: string | null
@@ -63,29 +68,37 @@ export function JourneyClient() {
         <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-6 text-white flex items-center gap-6 flex-wrap">
             <div className="flex-none grid place-items-center w-24 h-24 rounded-2xl bg-white/15 border border-white/30">
-              <div className="text-[0.6rem] font-mono tracking-widest uppercase opacity-80">FDE Lv</div>
-              <div className="text-4xl font-extrabold leading-none tabular-nums">{level.level}</div>
+              <div className="text-[0.6rem] font-mono tracking-widest uppercase opacity-80">{level.mode === 'grade' ? 'GRADE' : 'FDE Lv'}</div>
+              <div className="text-4xl font-extrabold leading-none tabular-nums">{level.level || '—'}</div>
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-lg font-bold">{level.title}</div>
               <div className="text-sm text-white/80 mb-2">
-                {level.level >= 100 ? '最高到達' : `次のレベルまで あと ${Math.max(0, level.levelSpan - level.intoLevel)} XP`}
-                <span className="ml-2 font-mono">／ 累計 {level.xp} XP</span>
+                {level.mode === 'grade'
+                  ? (level.awaitingApproval ? '講師の承認待ち' : level.nextTitle ? `次は ${level.nextTitle}（スキル ${level.metSkills ?? 0}/${level.neededSkills ?? 0} 達成）` : '最高グレード')
+                  : (<>{level.level >= 100 ? '最高到達' : `次のレベルまで あと ${Math.max(0, (level.levelSpan ?? 0) - (level.intoLevel ?? 0))} XP`}<span className="ml-2 font-mono">／ 累計 {level.xp ?? 0} XP</span></>)}
               </div>
               <div className="h-2.5 rounded-full bg-white/20 overflow-hidden max-w-md">
                 <div className="h-full bg-white rounded-full transition-all" style={{ width: `${level.pctToNext}%` }} />
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-100 border-t border-gray-100">
-            {[['レッスン', level.breakdown.lessons], ['クイズ', level.breakdown.quizzes],
-              ['案件追体験', level.breakdown.cases], ['課題', level.breakdown.assignments]].map(([l, v]) => (
-              <div key={l as string} className="px-4 py-3 text-center">
-                <div className="text-xl font-bold text-gray-900 tabular-nums">{v as number}</div>
-                <div className="text-xs text-gray-500">{l as string} 完了</div>
-              </div>
-            ))}
-          </div>
+          {level.mode === 'grade' ? (
+            <div className="px-6 py-3 border-t border-gray-100 text-sm text-gray-600 flex items-center justify-between">
+              <span>{level.courseTitle}</span>
+              <Link href="/skills" className="text-blue-600 hover:text-blue-700">スキルマップを見る →</Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-100 border-t border-gray-100">
+              {[['レッスン', level.breakdown?.lessons ?? 0], ['クイズ', level.breakdown?.quizzes ?? 0],
+                ['案件追体験', level.breakdown?.cases ?? 0], ['課題', level.breakdown?.assignments ?? 0]].map(([l, v]) => (
+                <div key={l as string} className="px-4 py-3 text-center">
+                  <div className="text-xl font-bold text-gray-900 tabular-nums">{v as number}</div>
+                  <div className="text-xs text-gray-500">{l as string} 完了</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
