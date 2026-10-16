@@ -38,6 +38,11 @@ export default function AdminEnrollmentsPage() {
   const [dueDate, setDueDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // 全講座一括登録
+  const [bulkUser, setBulkUser] = useState('')
+  const [bulkDue, setBulkDue] = useState('')
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkMsg, setBulkMsg] = useState('')
 
   const loadData = useCallback(async () => {
     const [enrollRes, usersRes, coursesRes] = await Promise.all([
@@ -81,9 +86,74 @@ export default function AdminEnrollmentsPage() {
     setLoading(false)
   }
 
+  const handleBulkEnroll = async () => {
+    if (!bulkUser) return
+    setBulkLoading(true)
+    setBulkMsg('')
+    setError('')
+    const res = await fetch('/api/admin/enrollments/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: bulkUser, dueDate: bulkDue || null }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      setError(data.error || 'エラーが発生しました')
+    } else {
+      const name = users.find((u) => u.id === bulkUser)?.name || bulkUser
+      setBulkMsg(`${name} さんを公開中の全 ${data.total} 講座に登録しました。`)
+      setBulkUser('')
+      setBulkDue('')
+      loadData()
+    }
+    setBulkLoading(false)
+  }
+
   return (
     <AdminLayout>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">受講者管理</h1>
+
+      {/* Bulk enroll into all courses */}
+      <Card className="mb-8 border-blue-200">
+        <CardHeader>
+          <h2 className="text-lg font-semibold">全講座に一括登録</h2>
+          <p className="text-sm text-gray-500 mt-1">選んだユーザーを、公開中のすべての講座に一度に登録します（既存の受講はそのまま）。</p>
+        </CardHeader>
+        <CardBody>
+          {bulkMsg && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm text-green-700">
+              {bulkMsg}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="w-full sm:w-auto sm:flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">ユーザー</label>
+              <select
+                value={bulkUser}
+                onChange={(e) => setBulkUser(e.target.value)}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              >
+                <option value="">選択してください</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name || u.id}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-full sm:w-auto">
+              <label className="block text-sm font-medium text-gray-700 mb-1">受講期限（任意・全講座共通）</label>
+              <input
+                type="date"
+                value={bulkDue}
+                onChange={(e) => setBulkDue(e.target.value)}
+                className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <Button onClick={handleBulkEnroll} loading={bulkLoading} disabled={!bulkUser}>
+              全講座に登録
+            </Button>
+          </div>
+        </CardBody>
+      </Card>
 
       {/* Create enrollment */}
       <Card className="mb-8">
