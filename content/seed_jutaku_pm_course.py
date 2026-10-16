@@ -191,7 +191,7 @@ def main():
                "3. 中間納品：次の納品に添える『未確定事項一覧』を3つ挙げる\n"
                "4. 速いQA：起票→PM確認→精査の運用ルール\n"
                "5. 外部連携（あれば）：責任分担・ステータス・招待一覧\n\n"
-               "※顧客名・社名は一般化して書いてください。", 6)
+               "※顧客名・社名は一般化して書いてください。", 7)
 
     for uid in MEMBERS:
         b.sb(env, "POST", "enrollments", {"user_id": uid, "course_id": c["id"], "status": "active"})
