@@ -95,40 +95,69 @@ export default async function CourseDetailPage({ params }: Props) {
   const completedLessons = (progressData || []).filter((p) => p.completed).length
   const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
 
+  const sectionCount = sectionsWithLessons.length
+
   return (
     <StudentLayout isAdmin={admin}>
-      <div className="mb-6">
+      <div className="mb-4">
         <Link href="/dashboard" className="text-sm text-blue-600 hover:text-blue-700">
           &larr; マイコースに戻る
         </Link>
       </div>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{course.title}</h1>
+      {/* ヒーロー */}
+      <div className="mb-8 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-6 sm:p-8 shadow-sm">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-3 text-balance">{course.title}</h1>
         {course.description && (
-          <p className="text-gray-600 mb-4">{course.description}</p>
+          <p className="text-blue-50/90 text-sm sm:text-base whitespace-pre-line leading-relaxed max-w-3xl">
+            {course.description}
+          </p>
         )}
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">
-            {completedLessons}/{totalLessons} レッスン完了
-          </span>
-          <Badge variant={overallProgress === 100 ? 'success' : 'info'}>
-            {overallProgress}%
-          </Badge>
+        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold tabular-nums">{overallProgress}%</span>
+            <span className="text-sm text-blue-100">
+              {completedLessons}/{totalLessons} レッスン完了
+            </span>
+          </div>
+          {sectionCount > 1 && (
+            <span className="text-sm text-blue-100">全{sectionCount}編・{totalLessons}本</span>
+          )}
         </div>
-        <div className="w-full max-w-md bg-gray-200 rounded-full h-2 mt-2">
+        <div className="w-full bg-white/25 rounded-full h-2.5 mt-3 max-w-xl">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all"
+            className="bg-white h-2.5 rounded-full transition-all"
             style={{ width: `${overallProgress}%` }}
           />
         </div>
       </div>
 
       <div className="space-y-6">
-        {sectionsWithLessons.map((section) => (
+        {sectionsWithLessons.map((section, sIdx) => {
+          const secTotal = section.lessons.length
+          const secDone = section.lessons.filter((l) => progressMap.get(l.id)?.completed).length
+          const secPct = secTotal > 0 ? Math.round((secDone / secTotal) * 100) : 0
+          return (
           <Card key={section.id}>
             <CardHeader>
-              <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-50 text-blue-600 text-sm font-bold flex items-center justify-center">
+                    {sIdx + 1}
+                  </span>
+                  <h2 className="text-lg font-semibold text-gray-900 truncate">{section.title}</h2>
+                </div>
+                {secTotal > 0 && (
+                  <Badge variant={secPct === 100 ? 'success' : 'info'}>
+                    {secDone}/{secTotal}
+                  </Badge>
+                )}
+              </div>
+              {secTotal > 0 && (
+                <div className="w-full bg-gray-100 rounded-full h-1.5 mt-3">
+                  <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${secPct}%` }} />
+                </div>
+              )}
             </CardHeader>
             <CardBody className="p-0">
               {section.lessons.length === 0 && section.cases.length === 0 ? (
@@ -206,7 +235,8 @@ export default async function CourseDetailPage({ params }: Props) {
               )}
             </CardBody>
           </Card>
-        ))}
+          )
+        })}
       </div>
     </StudentLayout>
   )
