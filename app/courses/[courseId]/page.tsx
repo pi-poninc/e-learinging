@@ -4,6 +4,7 @@ import { isAdmin } from '@/lib/permissions'
 import { StudentLayout } from '@/components/layouts/student-layout'
 import { Card, CardBody, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { RecommendedCourses } from '@/components/recommended-courses'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import type { Lesson, CaseSimulation } from '@/lib/db'
@@ -238,6 +239,10 @@ export default async function CourseDetailPage({ params }: Props) {
           )
         })}
       </div>
+
+      {overallProgress === 100 && (
+        <RecommendedCourses excludeCourseId={courseId} />
+      )}
     </StudentLayout>
   )
 }
