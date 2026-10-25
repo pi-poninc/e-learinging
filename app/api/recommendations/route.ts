@@ -15,7 +15,23 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   const qsUser = request.nextUrl.searchParams.get('userId')
+  const qsEmail = request.nextUrl.searchParams.get('email')
   const limit = Math.min(Number(request.nextUrl.searchParams.get('limit')) || 3, 10)
+
+  // email → e-learning のユーザーID を解決（イントラは社員をメールで識別するため）
+  async function resolveEmail(email: string): Promise<string | null> {
+    const svc = await createServiceClient()
+    const target = email.trim().toLowerCase()
+    // auth ユーザーをページングで突き合わせ（最大数千件を想定）
+    for (let page = 1; page <= 10; page++) {
+      const { data } = await svc.auth.admin.listUsers({ page, perPage: 1000 })
+      const users = data?.users || []
+      const hit = users.find((u) => (u.email || '').toLowerCase() === target)
+      if (hit) return hit.id
+      if (users.length < 1000) break
+    }
+    return null
+  }
 
   // --- 認証：イントラトークン or ログイン ---
   const intranetToken = process.env.INTRANET_API_TOKEN
@@ -23,23 +39,31 @@ export async function GET(request: NextRequest) {
   const bearer = authz.startsWith('Bearer ') ? authz.slice(7) : ''
   const viaToken = !!intranetToken && bearer === intranetToken
 
-  let targetUser = qsUser || ''
+  // 他ユーザー（userId/email）の指定を許すのは、イントラトークン or スタッフのみ
+  let allowOther = viaToken
+  let selfId = ''
   if (!viaToken) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    if (qsUser && qsUser !== user.id) {
-      // 他ユーザー指定はスタッフのみ
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-      if (!profile || !['admin', 'instructor', 'manager'].includes(profile.role)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
-      targetUser = qsUser
-    } else {
-      targetUser = user.id
-    }
+    selfId = user.id
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    allowOther = !!profile && ['admin', 'instructor', 'manager'].includes(profile.role)
   }
-  if (!targetUser) return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
+
+  let targetUser = ''
+  if (qsEmail) {
+    if (!allowOther) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const resolved = await resolveEmail(qsEmail)
+    if (!resolved) return NextResponse.json({ error: 'User not found for email', recommendations: [] }, { status: 404 })
+    targetUser = resolved
+  } else if (qsUser) {
+    if (!allowOther && qsUser !== selfId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    targetUser = qsUser
+  } else {
+    targetUser = selfId
+  }
+  if (!targetUser) return NextResponse.json({ error: 'Missing userId or email' }, { status: 400 })
 
   const svc = await createServiceClient()
 
