@@ -27,6 +27,19 @@ Authorization: Bearer <INTRANET_API_TOKEN>
 ```json
 {
   "userId": "eab89fcd-....",
+  "learner": {
+    "name": "南條 健人",
+    "level": { "level": 12, "title": "ジュニアFDE", "xp": 155 },
+    "masterPath": {
+      "title": "pipon流の働き方 ― 王道ジャーニー",
+      "overallPct": 18,
+      "nextCourse": {
+        "courseId": "e7643443-....",
+        "title": "Claude Codeの使い方 ― 環境構築・ターミナルから自走まで",
+        "url": "https://<app>/courses/e7643443-...."
+      }
+    }
+  },
   "recommendations": [
     {
       "courseId": "b42311d6-....",
@@ -38,7 +51,10 @@ Authorization: Bearer <INTRANET_API_TOKEN>
   ]
 }
 ```
-- 推薦は、各ロードマップで**到達済みの最先端講座の“次の1本”**（進捗率で優先）。該当なしなら `recommendations: []`。
+- `learner`：表示用の学習状況サマリ。
+  - `level`：FDEレベル（1〜100）と称号・XP。
+  - `masterPath`：王道ジャーニーの全体進捗％と「次にやる1本」（未開始なら先頭講座、完走なら `nextCourse: null`）。
+- `recommendations`：各ロードマップで**到達済みの最先端講座の“次の1本”**（進捗率で優先）。該当なしなら `[]`。
 - その社員が見つからない（未登録メール）→ `404` ＋ `recommendations: []`。
 
 エラー:
@@ -70,9 +86,84 @@ const res = await fetch(
   `${ELEARNING_URL}/api/recommendations?email=${encodeURIComponent(email)}`,
   { headers: { Authorization: `Bearer ${process.env.INTRANET_API_TOKEN}` } },
 )
-const { recommendations } = await res.json()
-// recommendations を社員のトップ画面に「次におすすめ」として描画
+const { learner, recommendations } = await res.json()
+// learner と recommendations を社員のトップ画面に描画
 ```
+
+## イントラ側 実装例（サーバ経由でフロントへ）
+
+トークンはサーバ側に置き、ブラウザには結果だけ渡します。
+
+### 1) サーバのプロキシ route（例：Next.js / App Router）
+```ts
+// intranet: app/api/learning/route.ts
+export async function GET(req: Request) {
+  const email = new URL(req.url).searchParams.get('email')!
+  const r = await fetch(
+    `${process.env.ELEARNING_URL}/api/recommendations?email=${encodeURIComponent(email)}`,
+    { headers: { Authorization: `Bearer ${process.env.INTRANET_API_TOKEN}` }, cache: 'no-store' },
+  )
+  return new Response(await r.text(), { status: r.status, headers: { 'content-type': 'application/json' } })
+}
+```
+
+### 2) 表示コンポーネント（例：React）
+```tsx
+// intranet: components/LearningPanel.tsx
+'use client'
+import { useEffect, useState } from 'react'
+
+type Reco = { courseId: string; title: string; reason: string; pathTitle: string; url: string }
+type Data = {
+  learner?: { name: string | null; level: { level: number; title: string; xp: number };
+    masterPath: { title: string; overallPct: number; nextCourse: { title: string; url: string } | null } | null }
+  recommendations: Reco[]
+}
+
+export function LearningPanel({ email }: { email: string }) {
+  const [data, setData] = useState<Data | null>(null)
+  useEffect(() => {
+    fetch(`/api/learning?email=${encodeURIComponent(email)}`)
+      .then((r) => (r.ok ? r.json() : null)).then(setData).catch(() => {})
+  }, [email])
+  if (!data) return null
+  const L = data.learner
+  const mp = L?.masterPath
+
+  return (
+    <section style={{ display: 'grid', gap: 12 }}>
+      {L && (
+        <div>
+          <strong>{L.name ?? '学習状況'}</strong>{' '}
+          <span>Lv.{L.level.level}（{L.level.title}）</span>
+          {mp && (
+            <div>
+              {mp.title}：{mp.overallPct}%
+              {mp.nextCourse && (
+                <> ・ 次は <a href={mp.nextCourse.url} target="_blank" rel="noreferrer">{mp.nextCourse.title}</a></>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+      {data.recommendations.length > 0 && (
+        <div>
+          <div style={{ fontWeight: 600 }}>次におすすめの講座</div>
+          <ul>
+            {data.recommendations.map((r) => (
+              <li key={r.courseId}>
+                <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
+                <small>（{r.reason}）</small>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  )
+}
+```
+使い方：`<LearningPanel email={ログイン中の社員メール} />` を社員トップに置くだけ。
 
 ## 注意
 

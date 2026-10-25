@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { recommendNextCourses, type PathLite, type CompletionMap } from '@/lib/recommend-courses'
+import { computeLevel } from '@/lib/fde-level'
 
 /**
  * 講座レコメンド API。
@@ -132,8 +133,40 @@ export async function GET(request: NextRequest) {
 
   const recos = recommendNextCourses(pathsLite, completion, titleById, limit)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
+
+  // --- 学習状況サマリ（レベル・王道進捗・次の一歩）---
+  const { data: prof } = await svc.from('profiles').select('name').eq('id', targetUser).maybeSingle()
+  const level = computeLevel({ lessons: doneL.size, quizzes: doneQ.size, cases: doneC.size, assignments: doneA.size })
+
+  const master = pathsLite.find((p) => p.title.startsWith('pipon流の働き方'))
+  let masterPath: null | { title: string; overallPct: number; nextCourse: { courseId: string; title: string; url: string } | null } = null
+  if (master) {
+    let tot = 0, dn = 0
+    for (const it of master.items) {
+      const cp = completion[it.courseId]; if (!cp) continue
+      tot += cp.total; dn += cp.done
+    }
+    const ordered = [...master.items].sort((a, b) => a.sortOrder - b.sortOrder)
+    const firstIncomplete = ordered.find((it) => {
+      const cp = completion[it.courseId]
+      return !(cp && cp.total > 0 && cp.done >= cp.total)
+    })
+    masterPath = {
+      title: master.title.replace('【まずここから】', ''),
+      overallPct: tot ? Math.round((dn / tot) * 100) : 0,
+      nextCourse: firstIncomplete
+        ? { courseId: firstIncomplete.courseId, title: titleById[firstIncomplete.courseId] || '(講座)', url: `${appUrl}/courses/${firstIncomplete.courseId}` }
+        : null,
+    }
+  }
+
   return NextResponse.json({
     userId: targetUser,
+    learner: {
+      name: prof?.name || null,
+      level: { level: level.level, title: level.title, xp: level.xp },
+      masterPath,
+    },
     recommendations: recos.map((r) => ({
       courseId: r.courseId, title: r.title, reason: r.reason,
       pathTitle: r.pathTitle, url: `${appUrl}/courses/${r.courseId}`,
