@@ -22,6 +22,7 @@ Authorization: Bearer <INTRANET_API_TOKEN>
 | `email` | △ | 社員のメール。`userId` と二択。イントラ側はこちらが使いやすい |
 | `userId` | △ | e-learning のユーザーID（UUID）。`email` と二択 |
 | `limit` | 任意 | 最大件数（既定3・上限10） |
+| `popular` | 任意 | `1` で「この講座を修了した人に人気」（協調フィルタ）を `alsoPopular` にも返す。全体集計のため少し重い。受講データが増えるほど有効 |
 
 レスポンス（200）:
 ```json
