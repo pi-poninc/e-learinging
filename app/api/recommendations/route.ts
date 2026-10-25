@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { computeLearnerSummary } from '@/lib/learner-summary'
+import { computeLearnerSummary, completersByCourse } from '@/lib/learner-summary'
+import { popularNextCourses } from '@/lib/popular-next'
 
 /**
  * 講座レコメンド API。
@@ -66,9 +67,20 @@ export async function GET(request: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
   const summary = await computeLearnerSummary(svc, targetUser, appUrl, limit)
 
+  // 協調フィルタ（「この講座を修了した人に人気」）は ?popular=1 のときだけ計算（全体スキャンのため）
+  let alsoPopular: { courseId: string; coCompleters: number; url: string }[] | undefined
+  if (['1', 'true', 'yes'].includes((request.nextUrl.searchParams.get('popular') || '').toLowerCase())) {
+    const map = await completersByCourse(svc)
+    const already = new Set(summary.recommendations.map((r) => r.courseId))
+    alsoPopular = popularNextCourses(map, new Set(summary.completedCourseIds), limit)
+      .filter((p) => !already.has(p.courseId))
+      .map((p) => ({ courseId: p.courseId, coCompleters: p.coCompleters, url: `${appUrl}/courses/${p.courseId}` }))
+  }
+
   return NextResponse.json({
     userId: targetUser,
     learner: { name: summary.name, level: summary.level, masterPath: summary.masterPath },
     recommendations: summary.recommendations,
+    ...(alsoPopular ? { alsoPopular } : {}),
   })
 }

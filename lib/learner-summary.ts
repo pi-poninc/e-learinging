@@ -22,6 +22,7 @@ export interface LearnerSummary {
   level: { level: number; title: string; xp: number }
   masterPath: null | { title: string; overallPct: number; nextCourse: { courseId: string; title: string; url: string } | null }
   recommendations: CourseRecoOut[]
+  completedCourseIds: string[]
 }
 
 export async function computeLearnerSummary(
@@ -120,6 +121,11 @@ export async function computeLearnerSummary(
     }
   }
 
+  const completedCourseIds = courseIds.filter((c) => {
+    const cp = completion[c]
+    return cp && cp.total > 0 && cp.done >= cp.total
+  })
+
   return {
     name: prof?.name || null,
     level: { level: level.level, title: level.title, xp: level.xp },
@@ -128,5 +134,63 @@ export async function computeLearnerSummary(
       courseId: r.courseId, title: r.title, reason: r.reason, pathTitle: r.pathTitle,
       url: `${appUrl}/courses/${r.courseId}`,
     })),
+    completedCourseIds,
   }
+}
+
+/**
+ * 全ユーザーの「講座ごとの修了者集合」を計算（協調フィルタ用）。
+ * O(ユーザー×講座)。規模が大きくなったらキャッシュ推奨。
+ */
+export async function completersByCourse(svc: Svc): Promise<Record<string, Set<string>>> {
+  const { data: courses } = await svc.from('courses').select('id').eq('status', 'published')
+  const courseIds = (courses || []).map((c: { id: string }) => c.id)
+  const result: Record<string, Set<string>> = {}
+  if (courseIds.length === 0) return result
+
+  const { data: sections } = await svc.from('sections').select('id, course_id').in('course_id', courseIds)
+  const secToCourse = new Map((sections || []).map((s: { id: string; course_id: string }) => [s.id, s.course_id]))
+  const secIds = (sections || []).map((s: { id: string }) => s.id)
+  const total: Record<string, number> = {}
+  const itemCourse = new Map<string, string>()
+  if (secIds.length) {
+    const [ls, qs, as_, cs] = await Promise.all([
+      svc.from('lessons').select('id, section_id').eq('status', 'published').in('section_id', secIds),
+      svc.from('quizzes').select('id, section_id').eq('status', 'published').in('section_id', secIds),
+      svc.from('assignments').select('id, section_id').eq('status', 'published').in('section_id', secIds),
+      svc.from('case_simulations').select('id, section_id').eq('status', 'published').in('section_id', secIds),
+    ])
+    const reg = (rows: { id: string; section_id: string }[] | null) => {
+      for (const r of rows || []) {
+        const cid = secToCourse.get(r.section_id) as string | undefined; if (!cid) continue
+        itemCourse.set(r.id, cid); total[cid] = (total[cid] || 0) + 1
+      }
+    }
+    reg(ls.data); reg(qs.data); reg(as_.data); reg(cs.data)
+  }
+
+  // (user|course) → done 数
+  const [lp, qa, ca, su] = await Promise.all([
+    svc.from('lesson_progress').select('user_id, lesson_id').eq('completed', true),
+    svc.from('quiz_attempts').select('user_id, quiz_id').eq('passed', true),
+    svc.from('case_attempts').select('user_id, case_simulation_id').eq('completed', true),
+    svc.from('assignment_submissions').select('user_id, assignment_id').eq('status', 'approved'),
+  ])
+  const done = new Map<string, number>()
+  const add = (rows: { user_id: string;[k: string]: string }[] | null, key: string) => {
+    for (const r of rows || []) {
+      const cid = itemCourse.get(r[key]); if (!cid) continue
+      const k = `${r.user_id}|${cid}`; done.set(k, (done.get(k) || 0) + 1)
+    }
+  }
+  add(lp.data, 'lesson_id'); add(qa.data, 'quiz_id'); add(ca.data, 'case_simulation_id'); add(su.data, 'assignment_id')
+
+  for (const [k, d] of done) {
+    const [u, cid] = k.split('|')
+    if (total[cid] > 0 && d >= total[cid]) {
+      if (!result[cid]) result[cid] = new Set()
+      result[cid].add(u)
+    }
+  }
+  return result
 }

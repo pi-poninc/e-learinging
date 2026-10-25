@@ -13,6 +13,7 @@ const navItems = [
   { href: '/admin/groups', label: 'グループ管理' },
   { href: '/admin/enrollments', label: '受講登録' },
   { href: '/admin/progress', label: '進捗確認' },
+  { href: '/admin/analytics', label: '効果測定' },
   { href: '/admin/reports', label: '進捗・成績レポート' },
   { href: '/admin/announcements', label: 'お知らせ配信' },
   { href: '/admin/reminders', label: '受講リマインド' },
