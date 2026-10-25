@@ -4,6 +4,7 @@ import { isAdmin, isStaff } from '@/lib/permissions'
 import { StudentLayout } from '@/components/layouts/student-layout'
 import { FdeLevelCard } from '@/components/fde-level-card'
 import { NextStepCard } from '@/components/next-step-card'
+import { computeStreak } from '@/lib/streak'
 import { Card, CardBody } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -102,9 +103,35 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(5)
 
+  // 連続学習日（ストリーク）＝完了アクティビティの日付から算出
+  const [lpTs, qaTs, caTs, asTs] = await Promise.all([
+    supabase.from('lesson_progress').select('completed_at').eq('user_id', profile.id).eq('completed', true).not('completed_at', 'is', null),
+    supabase.from('quiz_attempts').select('completed_at').eq('user_id', profile.id).eq('passed', true).not('completed_at', 'is', null),
+    supabase.from('case_attempts').select('completed_at').eq('user_id', profile.id).eq('completed', true).not('completed_at', 'is', null),
+    supabase.from('assignment_submissions').select('submitted_at').eq('user_id', profile.id).not('submitted_at', 'is', null),
+  ])
+  const activityTs: string[] = [
+    ...((lpTs.data || []).map((r) => r.completed_at as string)),
+    ...((qaTs.data || []).map((r) => r.completed_at as string)),
+    ...((caTs.data || []).map((r) => r.completed_at as string)),
+    ...((asTs.data || []).map((r) => r.submitted_at as string)),
+  ].filter(Boolean)
+  const streak = computeStreak(activityTs)
+
   return (
     <StudentLayout isAdmin={isAdmin(profile.role)} showTeam={isStaff(profile.role)}>
       <NextStepCard />
+      {streak.current > 0 && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+          <span className="text-2xl" aria-hidden>🔥</span>
+          <div>
+            <p className="font-semibold text-orange-800">{streak.current}日 連続学習中！</p>
+            <p className="text-xs text-orange-700/80">
+              最長 {streak.longest}日 ・ 学習した日数 {streak.activeDays}日。今日も1本進めて記録を伸ばそう。
+            </p>
+          </div>
+        </div>
+      )}
       <FdeLevelCard />
       {announcements && announcements.length > 0 && (
         <div className="mb-6">

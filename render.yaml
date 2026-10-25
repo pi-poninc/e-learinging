@@ -76,3 +76,22 @@ services:
         sync: false
       - key: NEXT_PUBLIC_APP_URL
         sync: false
+
+  # 週次ダイジェスト（レベル・王道進捗・次の1本・おすすめをメール）
+  - type: cron
+    name: pipon-learning-weekly-digest
+    runtime: node
+    plan: starter
+    region: singapore
+    # 毎週月曜 JST 8:00 = 日曜 UTC 23:00
+    schedule: "0 23 * * 0"
+    buildCommand: "echo no build"
+    startCommand: >
+      curl -fsS -X POST
+      -H "Authorization: Bearer $CRON_SECRET"
+      "$NEXT_PUBLIC_APP_URL/api/cron/weekly-digest"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
